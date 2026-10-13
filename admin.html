@@ -1,47 +1,105 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f8d82e"><title>Dailzo Admin — Supabase</title><style>
-:root{--y:#f8d82e;--g:#176b3b;--ink:#202124;--muted:#687078;--bg:#f6f6f3;--line:#e5e7eb}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}header{background:var(--y);padding:15px;position:sticky;top:0;z-index:2}.head{max-width:1000px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:10px}.brand{font-size:23px;font-weight:900}.badge{background:#fff5b8;border-radius:99px;padding:6px 9px;font-size:12px;font-weight:800}main{max-width:1000px;margin:18px auto;padding:0 13px}.notice{background:#fff6d2;border:1px solid #ead25a;padding:13px;border-radius:13px;line-height:1.5}.panel,.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:15px;margin-top:13px}.panel h2{margin:0 0 12px;font-size:19px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}.field input,.field select{width:100%;border:1px solid #d7dbe0;border-radius:9px;padding:11px;font:inherit;background:white}.btn,.secondary,.danger{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:800;cursor:pointer}.btn{background:var(--g);color:white}.secondary{background:#eef1ed;border:1px solid var(--line)}.danger{background:#b42318;color:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.status{padding:10px;border-radius:9px;margin-top:10px;background:#eef1ed;white-space:pre-wrap;overflow-wrap:anywhere}.hidden{display:none!important}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:600px}td,th{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:14px}th{font-size:12px;color:var(--muted)}.small{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:8px;margin:14px 0}.tabs button{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-weight:750}.tabs button.active{background:var(--g);color:#fff}.price{font-weight:800}@media(max-width:600px){.grid{grid-template-columns:1fr}.head{align-items:flex-start}.brand{font-size:20px}}
-</style></head><body><header><div class="head"><div class="brand">🟩 DAILZO <div class="small" style="color:#333;font-weight:500">Admin · Redma, Daltonganj</div></div><span class="badge">ADMIN LOGIN</span></div></header><main>
-<div class="notice"><b>ध्यान दें:</b> यह पैनल Supabase Auth से ईमेल/पासवर्ड लॉगिन माँगता है। केवल Publishable key इस्तेमाल करें—Secret/service-role key कभी नहीं। डेटाबेस में INSERT/UPDATE/DELETE policies भी admin user तक सीमित होनी चाहिए; नीचे दिए गए setup steps पूरा होने तक वास्तविक डेटा पर भरोसा न करें।</div>
-<section class="panel" id="loginPanel"><h2>1. Admin Login</h2><div class="grid"><div class="field"><label for="email">Admin email</label><input id="email" type="email" autocomplete="username" placeholder="तुम्हारा admin email"></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Admin password"></div></div><div class="actions"><button class="btn" id="login">Login</button><button class="secondary hidden" id="logout" type="button">Logout</button><button class="secondary" id="changeConnection" type="button">Connection settings</button></div><div id="authStatus" class="status">पहले Project URL और Publishable key भरकर Connect करें, फिर अपने Admin email/password से Login करें।</div></section>
-<section class="panel hidden" id="connectionPanel"><h2>Supabase कनेक्शन सेटिंग</h2><div class="grid"><div class="field"><label for="url">Project URL</label><input id="url" type="url" placeholder="https://your-project.supabase.co" autocomplete="off"></div><div class="field"><label for="key">Publishable key (sb_publishable_...)</label><input id="key" type="password" placeholder="sb_publishable_..." autocomplete="off"></div></div><div class="actions"><button class="btn" id="connect">Connect & load products</button><button class="secondary" id="forget">Forget saved connection</button></div><div id="status" class="status">पहले Project URL और Publishable key डालें।</div><p class="small">कनेक्शन इसी ब्राउज़र में सेव हो सकता है। साझा/दूसरे के फोन पर सेव न करें।</p></section>
-<div id="adminTools" class="hidden"><div class="tabs"><button class="active" data-tab="products">Products & Stock</button><button data-tab="setup">Setup help</button></div>
-<section id="products" class="tab"><div class="panel"><h2 id="formTitle">प्रोडक्ट जोड़ें / बदलें</h2><form id="form"><input id="pid" type="hidden"><div class="grid"><div class="field"><label for="name">Product name *</label><input id="name" required maxlength="120" placeholder="जैसे Test Flower"></div><div class="field"><label for="price">Price (₹) *</label><input id="price" required type="number" min="0" step="0.01"></div><div class="field"><label for="stock">Stock *</label><input id="stock" required type="number" min="0" step="1"></div><div class="field"><label for="category">Category</label><input id="category" placeholder="Flowers"></div><div class="field"><label for="image">Image URL (optional)</label><input id="image" type="url" placeholder="https://..."></div></div><div class="actions"><button class="btn" type="submit">Save product to database</button><button class="secondary" type="button" id="clear">Clear</button><button class="secondary" type="button" id="reload">Reload products</button></div></form></div>
-<div class="panel"><h2>Database products <span id="count" class="small">(0)</span></h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="small">कनेक्शन के बाद प्रोडक्ट यहाँ दिखेंगे।</div></div></section>
-<section id="setup" class="tab hidden"><div class="panel"><h2>अगर Save पर permission error आए</h2><p>अभी Products पर केवल SELECT policy बनाई गई है। इसलिए पढ़ना चलेगा, लेकिन insert/update/delete असफल हो सकते हैं। बिना सुरक्षित admin login के public write policy बनाना सुरक्षित नहीं है। अगला सही कदम Supabase Auth से admin login और उसी user के लिए सीमित policies बनाना है।</p><p>इस पेज में अभी customer orders या order details नहीं हैं।</p></div></section></div>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const $=id=>document.getElementById(id);let sb=null, products=[], loggedIn=false;const CFG='dailzo_supabase_admin_config_v2';try{const c=JSON.parse(localStorage.getItem(CFG)||'{}');$('url').value=c.url||'';$('key').value=c.key||''}catch(e){}
-function say(t){$('status').textContent=t}function authSay(t){$('authStatus').textContent=t}function setTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('hidden',x.id!==id));document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id))}document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-function field(p,...names){for(const n of names){if(p[n]!==undefined)return p[n]}const keys=Object.keys(p);for(const n of names){const k=keys.find(x=>x.toLowerCase()===n.toLowerCase());if(k)return p[k]}return undefined}
-function normalize(p){return {id:field(p,'id'),name:field(p,'Name','name')||'',price:Number(field(p,'Price','price')||0),stock:Number(field(p,'Stock','stock')||0),category:field(p,'Category','category')||'',image:field(p,'Image','image')||''}}
-async function connect(){const url=$('url').value.trim().replace(/\/$/,'');const key=$('key').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){say('Project URL सही नहीं लग रहा। Supabase के Data API पेज से पूरा Project URL कॉपी करें।');return}if(!key.startsWith('sb_publishable_')){say('Publishable key डालें (sb_publishable_ से शुरू होनी चाहिए)। Secret key न डालें।');return}if(!window.supabase){say('Supabase library लोड नहीं हुई। इंटरनेट चालू करके पेज refresh करें।');return}try{localStorage.setItem(CFG,JSON.stringify({url,key}));sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});say('कनेक्शन बन गया। अब Admin Login करें।');const {data}=await sb.auth.getSession();if(data.session){loggedIn=true;showAdmin();authSay('पहले से लॉगिन है: '+(data.session.user.email||'Admin'));await loadProducts()}else{loggedIn=false;showAdmin()}}catch(e){say('कनेक्शन में समस्या: '+(e.message||e))}}
-function showAdmin(){$('adminTools').classList.toggle('hidden',!loggedIn);$('login').classList.toggle('hidden',loggedIn);$('logout').classList.toggle('hidden',!loggedIn);$('email').disabled=loggedIn;$('password').disabled=loggedIn}
-async function login(){if(!sb){authSay('पहले Project URL और Publishable key भरकर Connect करें।');return}const email=$('email').value.trim(),password=$('password').value;if(!email||!password){authSay('Admin email और password भरें।');return}authSay('लॉगिन जाँचा जा रहा है…');const r=await sb.auth.signInWithPassword({email,password});if(r.error){authSay('लॉगिन नहीं हुआ: '+r.error.message);return}loggedIn=true;showAdmin();authSay('लॉगिन सफल: '+r.data.user.email);await loadProducts()}
-async function logout(){if(sb)await sb.auth.signOut();loggedIn=false;products=[];render();showAdmin();$('email').disabled=false;$('password').disabled=false;$('password').value='';authSay('Logout हो गया। प्रोडक्ट मैनेज करने के लिए दोबारा Login करें।')}
-async function loadProducts(){if(!sb){say('पहले Connect दबाएँ।');return}if(!loggedIn){say('पहले Admin Login करें।');return}say('Products लोड हो रहे हैं…');const r=await sb.from('Products').select('*').limit(200);if(r.error){say('Products पढ़ने में समस्या: '+r.error.message);return}products=(r.data||[]).map(normalize);render();say('कनेक्शन सफल! '+products.length+' प्रोडक्ट मिले।')}
-function render(){$('count').textContent='('+products.length+')';$('rows').innerHTML=products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td class="price">₹${p.price.toFixed(2)}</td><td>${p.stock}</td><td><button class="secondary" onclick="editProduct(${JSON.stringify(String(p.id))})">Edit</button> <button class="danger" onclick="deleteProduct(${JSON.stringify(String(p.id))})">Delete</button></td></tr>`).join('');$('empty').classList.toggle('hidden',products.length>0)}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function reset(){ $('form').reset();$('pid').value='';$('formTitle').textContent='प्रोडक्ट जोड़ें / बदलें'}function editProduct(id){if(!loggedIn)return;const p=products.find(x=>String(x.id)===String(id));if(!p)return;$('pid').value=p.id;$('name').value=p.name;$('price').value=p.price;$('stock').value=p.stock;$('category').value=p.category;$('image').value=p.image;$('formTitle').textContent='प्रोडक्ट बदलें';window.scrollTo({top:0,behavior:'smooth'})}
-function dbItem(){return {'Name':$('name').value.trim(),'Price':Number($('price').value),'Stock':Number($('stock').value),'Category':$('category').value.trim(),'Image':$('image').value.trim()||null}}
-$('connect').onclick=connect;$('login').onclick=login;$('changeConnection').onclick=()=>{$('connectionPanel').classList.toggle('hidden')};$('logout').onclick=logout;$('reload').onclick=loadProducts;$('clear').onclick=reset;$('forget').onclick=()=>{localStorage.removeItem(CFG);$('url').value='';$('key').value='';sb=null;loggedIn=false;products=[];render();showAdmin();say('इस ब्राउज़र से saved connection हटा दिया गया।');authSay('पहले Project URL और Publishable key डालें।')};
-$('form').onsubmit=async e=>{e.preventDefault();if(!sb||!loggedIn){say('पहले Admin Login करें।');return}const id=$('pid').value;let q;if(id){q=sb.from('Products').update(dbItem()).eq('id',id)}else{q=sb.from('Products').insert(dbItem())}const r=await q.select();if(r.error){say('Save नहीं हुआ: '+r.error.message+'\nSupabase में इस admin UID के लिए सुरक्षित INSERT/UPDATE policy चाहिए।');return}say('प्रोडक्ट database में सेव हो गया।');reset();await loadProducts()};
-async function deleteProduct(id){if(!sb||!loggedIn||!confirm('क्या इस प्रोडक्ट को डेटाबेस से हटाना है?'))return;const r=await sb.from('Products').delete().eq('id',id);if(r.error){say('Delete नहीं हुआ: '+r.error.message+'\nSupabase में इस admin UID के लिए सुरक्षित DELETE policy चाहिए।');return}say('प्रोडक्ट हटा दिया गया।');await loadProducts()}
-showAdmin();
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8d82e"><title>Dailzo Admin</title>
+<style>
+:root{--y:#f8d82e;--g:#176b3b;--ink:#202124;--line:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:#f6f6f3;color:var(--ink)}
+header{background:var(--y);padding:16px;font-weight:900;font-size:23px;position:sticky;top:0}
+main{max-width:850px;margin:18px auto;padding:0 13px}.card{background:white;border:1px solid var(--line);border-radius:16px;padding:16px;margin:13px 0}
+h2{margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-weight:700;margin-bottom:5px}input{width:100%;padding:12px;border:1px solid #ccd0d5;border-radius:9px;font:inherit}
+button{padding:12px 15px;border:0;border-radius:10px;font:inherit;font-weight:800;cursor:pointer;margin:6px 5px 0 0}
+.primary{background:var(--g);color:white}.secondary{background:#eef1ed}.danger{background:#b42318;color:white}
+.status{background:#eef1ed;padding:12px;border-radius:10px;margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.hidden{display:none!important}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:530px}td,th{text-align:left;padding:9px;border-bottom:1px solid var(--line)}
+.small{font-size:13px;color:#555}.notice{background:#fff6d2;padding:12px;border-radius:10px;line-height:1.5}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>🟩 DAILZO <div class="small" style="color:#333;font-weight:500">Admin · Redma, Daltonganj</div></header>
+<main>
+<div class="notice"><b>ध्यान दें:</b> Supabase अपने-आप कनेक्ट होगा। केवल Publishable key इस्तेमाल करें। डेटाबेस की RLS policies भी सुरक्षित होनी चाहिए; Login स्क्रीन अकेले डेटाबेस को सुरक्षित नहीं करती।</div>
+<section class="card" id="loginCard">
+<h2>Admin Login</h2>
+<label for="email">Admin email</label><input id="email" type="email" autocomplete="username" placeholder="Admin email">
+<br><br><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Admin password">
+<button class="primary" id="login">Login</button><button class="secondary hidden" id="logout">Logout</button>
+<div id="authStatus" class="status">Supabase कनेक्ट हो रहा है…</div>
+</section>
+<section class="card hidden" id="adminCard">
+<h2>Products & Stock</h2>
+<form id="form">
+<input id="pid" type="hidden">
+<div class="grid">
+<div><label for="name">Product name *</label><input id="name" required maxlength="120"></div>
+<div><label for="price">Price (₹) *</label><input id="price" type="number" min="0" step=".01" required></div>
+<div><label for="stock">Stock *</label><input id="stock" type="number" min="0" step="1" required></div>
+<div><label for="category">Category</label><input id="category" placeholder="Flowers"></div>
+<div><label for="image">Image URL (optional)</label><input id="image" type="url" placeholder="https://..."></div>
+</div>
+<button class="primary" type="submit">Save product</button><button class="secondary" type="button" id="clear">Clear</button><button class="secondary" type="button" id="reload">Reload products</button>
+</form>
+<div id="status" class="status">डेटाबेस से प्रोडक्ट लोड हो रहे हैं…</div>
+<h2 style="margin-top:20px">Database products <span id="count" class="small">(0)</span></h2>
+<div class="tablewrap"><table><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const PROJECT_URL = 'https://zeewsrfkbtllbejjkveq.supabase.co';
+const PUBLISHABLE_KEY = 'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv';
+const $ = id => document.getElementById(id);
+let sb = null, products = [], loggedIn = false;
+function authSay(t){$('authStatus').textContent=t}
+function say(t){$('status').textContent=t}
+function showState(){
+  $('adminCard').classList.toggle('hidden',!loggedIn);
+  $('login').classList.toggle('hidden',loggedIn);
+  $('logout').classList.toggle('hidden',!loggedIn);
+  $('email').disabled=loggedIn; $('password').disabled=loggedIn;
+}
+function normalize(p){const get=(...names)=>{for(const n of names)if(p[n]!==undefined)return p[n];const k=Object.keys(p).find(k=>names.some(n=>n.toLowerCase()===k.toLowerCase()));return k?p[k]:undefined};return {id:get('id'),name:get('Name','name')||'',price:Number(get('Price','price')||0),stock:Number(get('Stock','stock')||0),category:get('Category','category')||'',image:get('Image','image')||''}}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+ $('count').textContent='('+products.length+')';
+ $('rows').innerHTML=products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>₹${p.price.toFixed(2)}</td><td>${p.stock}</td><td><button class="secondary" type="button" onclick="editProduct('${String(p.id).replace(/'/g,"\\'")}')">Edit</button><button class="danger" type="button" onclick="deleteProduct('${String(p.id).replace(/'/g,"\\'")}')">Delete</button></td></tr>`).join('');
+}
+async function loadProducts(){
+ if(!sb||!loggedIn)return;
+ say('प्रोडक्ट लोड हो रहे हैं…');
+ const {data,error}=await sb.from('Products').select('*').limit(200);
+ if(error){say('प्रोडक्ट पढ़ने में समस्या: '+error.message);return}
+ products=(data||[]).map(normalize);render();say('कनेक्शन सफल! '+products.length+' प्रोडक्ट मिले।');
+}
+async function login(){
+ const email=$('email').value.trim(),password=$('password').value;
+ if(!email||!password){authSay('Admin email और password भरें।');return}
+ authSay('Login जाँचा जा रहा है…');
+ const {data,error}=await sb.auth.signInWithPassword({email,password});
+ if(error){authSay('Login नहीं हुआ: '+error.message);return}
+ loggedIn=true;showState();authSay('Login सफल: '+(data.user.email||'Admin'));await loadProducts();
+}
+async function logout(){await sb.auth.signOut();loggedIn=false;products=[];render();showState();$('password').value='';authSay('Logout हो गया।')}
+function item(){return {'Name':$('name').value.trim(),'Price':Number($('price').value),'Stock':Number($('stock').value),'Category':$('category').value.trim(),'Image':$('image').value.trim()||null}}
+function reset(){$('form').reset();$('pid').value=''}
+function editProduct(id){const p=products.find(x=>String(x.id)===String(id));if(!p)return;$('pid').value=p.id;$('name').value=p.name;$('price').value=p.price;$('stock').value=p.stock;$('category').value=p.category;$('image').value=p.image;window.scrollTo({top:0,behavior:'smooth'})}
+async function deleteProduct(id){if(!loggedIn||!confirm('क्या यह प्रोडक्ट हटाना है?'))return;const {error}=await sb.from('Products').delete().eq('id',id);if(error){say('Delete नहीं हुआ: '+error.message);return}say('प्रोडक्ट हट गया।');await loadProducts()}
+$('login').onclick=login;$('logout').onclick=logout;$('reload').onclick=loadProducts;$('clear').onclick=reset;
+$('form').onsubmit=async e=>{e.preventDefault();if(!loggedIn){say('पहले Login करें।');return}const id=$('pid').value;const q=id?sb.from('Products').update(item()).eq('id',id):sb.from('Products').insert(item());const {error}=await q;if(error){say('Save नहीं हुआ: '+error.message+' — Supabase में सुरक्षित INSERT/UPDATE policy चाहिए।');return}say('प्रोडक्ट सेव हो गया।');reset();await loadProducts()};
 (async function startup(){
-  if($('url').value && $('key').value){
-    $('connectionPanel').classList.add('hidden');
-    await connect();
-    if(sb){
-      const {data,error}=await sb.auth.getSession();
-      if(!error && data.session){
-        loggedIn=true;showAdmin();
-        authSay('पहले से लॉगिन है: '+(data.session.user.email||'Admin'));
-        await loadProducts();
-      }else{
-        loggedIn=false;showAdmin();
-        authSay('Admin email और password डालकर Login करें। Supabase कनेक्शन अपने-आप तैयार है।');
-      }
-    }
-  }else{
-    $('connectionPanel').classList.remove('hidden');
-    authSay('पहली बार Project URL और Publishable key सेट करें। इसके बाद कनेक्शन अपने-आप होगा।');
-  }
-})();</script></body></html>
+ if(!window.supabase){authSay('Supabase library लोड नहीं हुई। इंटरनेट चालू करके refresh करें।');return}
+ try{
+   sb=window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+   authSay('Supabase अपने-आप कनेक्ट हो गया। Admin email और password से Login करें।');
+   const {data,error}=await sb.auth.getSession();
+   if(error)authSay('Session जाँचने में समस्या: '+error.message);
+   if(data&&data.session){loggedIn=true;showState();authSay('पहले से Login हैं: '+(data.session.user.email||'Admin'));await loadProducts()}
+   else showState();
+   sb.auth.onAuthStateChange((_event,session)=>{if(!session&&loggedIn){loggedIn=false;products=[];showState();render();authSay('Session समाप्त। दोबारा Login करें.')}});
+ }catch(e){authSay('Supabase कनेक्शन में समस्या: '+(e.message||e))}
+})();
+</script>
+</body></html>
