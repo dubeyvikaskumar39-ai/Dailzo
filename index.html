@@ -364,10 +364,41 @@ const defaults=[
  {id:8,name:'Dishwash Liquid',sub:'500 ml',price:89,emoji:'🧴',cat:'Home Care'}
 ];
 let products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||defaults;
+let productsSource='demo';
+async function loadSupabaseProducts(){
+  try{
+    const {data,error}=await supabase.from('Products').select('*').order('id',{ascending:true});
+    if(error) throw error;
+    if(!Array.isArray(data)) throw new Error('Unexpected product response.');
+    const mapped=data.map((row,index)=>{
+      const name=row.Name ?? row.name ?? row.Product_name ?? row.product_name ?? row.title ?? '';
+      const price=Number(row.Price ?? row.price ?? row.sale_price ?? row.selling_price ?? 0);
+      const category=String(row.Category ?? row.category ?? 'Grocery');
+      const image=row.Image ?? row.image ?? row.image_url ?? row.Image_URL ?? '';
+      const emojiMap={'Dairy':'🥛','Snacks':'🍪','Grocery':'🌾','Drinks':'🧃','Personal Care':'🧴','Home Care':'🧹','Fruits':'🍎'};
+      return {id:row.id ?? ('db-'+index),name:String(name||'Unnamed product'),sub:String(row.Unit ?? row.unit ?? row.Description ?? row.description ?? category),price,emoji:emojiMap[category]||'🛒',cat:category,image:String(image||'')};
+    }).filter(p=>p.name && Number.isFinite(p.price) && p.price>=0);
+    products=mapped;
+    productsSource='supabase';
+    renderProducts(); renderCart();
+    const notice=document.querySelector('#home .notice');
+    if(notice) notice.textContent=mapped.length
+      ? 'Products are being loaded from the Dailzo store database.'
+      : 'Supabase connected, but the Products table is empty. Add a product in the admin panel.';
+    if(!mapped.length) document.getElementById('productHeading').textContent='No products in store yet';
+  }catch(error){
+    console.error('Dailzo product loading failed:',error);
+    productsSource='demo';
+    products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||defaults;
+    renderProducts();
+    const notice=document.querySelector('#home .notice');
+    if(notice) notice.textContent='Could not load live products from the store database. Showing demo products for now. Check Products table access and column names.';
+  }
+}
 let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
 const money=n=>'₹'+Number(n).toLocaleString('en-IN');
 function save(){localStorage.setItem('dailzoProducts',JSON.stringify(products));localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
-function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
+function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.image?`<img src="${p.image}" alt="${p.name}" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`:p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
 function setCat(c){activeCat=c;renderProducts();document.getElementById('search').value='';}
 function changeQty(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];save();renderProducts();renderCart();}
 function totalCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
@@ -382,7 +413,7 @@ function renderOrders(){document.getElementById('orderHistory').innerHTML=orders
 function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
 function addProduct(){let name=document.getElementById('newName').value.trim(),price=Number(document.getElementById('newPrice').value),emoji=document.getElementById('newEmoji').value.trim()||'🛒',cat=document.getElementById('newCat').value;if(!name||price<=0){document.getElementById('adminMsg').textContent='Enter a product name and a price greater than zero.';return;}products.unshift({id:Date.now(),name,price,emoji,cat,sub:'Everyday essential'});save();renderProducts();document.getElementById('adminMsg').textContent='Added to this device’s demo catalogue.';document.getElementById('newName').value='';document.getElementById('newPrice').value='';document.getElementById('newEmoji').value='';}
-const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderProducts();renderCart();renderOrders();
+const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderProducts();renderCart();renderOrders();loadSupabaseProducts();
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
 }
