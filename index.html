@@ -161,19 +161,10 @@ main{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
 <section id="home" class="screen active">
  <div class="hero"><div><span class="pill">WELCOME TO DAILZO</span><h1>Your daily needs.<br>One <span style="color:#079b50">easy</span> stop.</h1><p>Everyday essentials at your fingertips.</p><div class="hero-features"><span><i>ϟ</i>Fresh<br>Products</span><span><i>➜</i>Fast<br>Delivery</span><span><i>%</i>Best<br>Prices</span></div></div><div class="bag" aria-hidden="true">🛍️</div></div>
  <h2>Shop by category</h2>
- <div class="cats">
- <button class="cat" onclick="setCat('All')"><span class="emoji">🛒</span>All items</button>
- <button class="cat" onclick="setCat('Dairy')"><span class="emoji">🥛</span>Dairy</button>
- <button class="cat" onclick="setCat('Snacks')"><span class="emoji">🍪</span>Snacks</button>
- <button class="cat" onclick="setCat('Grocery')"><span class="emoji">🌾</span>Grocery</button>
- <button class="cat" onclick="setCat('Drinks')"><span class="emoji">🧃</span>Drinks</button>
- <button class="cat" onclick="setCat('Personal Care')"><span class="emoji">🧴</span>Personal care</button>
- <button class="cat" onclick="setCat('Home Care')"><span class="emoji">🧹</span>Home care</button>
- <button class="cat" onclick="setCat('Fruits')"><span class="emoji">🍎</span>Fruits</button>
- </div>
+ <div class="cats" id="categoryList"><button class="cat" onclick="setCat('All')"><span class="emoji">🛒</span>All items</button></div>
  <div class="fresh-banner"><div><strong>Fresh Fruits &amp; Vegetables</strong><p>Healthy choices for a better you</p><button onclick="setCat('Fruits')">Shop now&nbsp; →</button></div><span>🥬🍅🥕</span></div>
  <h2 id="productHeading">Popular near you</h2><div id="products" class="grid"></div>
- <p class="notice">DEMO STORE: Browse products freely. Login is required before checkout. Real order placement is not connected yet.</p>
+ <p class="notice">Catalogue loads from Supabase. Checkout is still in demo mode and orders are not yet sent to the store database.</p>
 </section>
 <section id="cart" class="screen"><h2>Your cart</h2><div id="cartItems"></div><div id="cartTotals"></div><button class="checkout" onclick="checkout()">Continue to checkout</button></section>
 <section id="orders" class="screen"><h2>Your orders</h2><div id="orderHistory" class="empty">Your placed demo orders will appear here.</div></section>
@@ -258,8 +249,6 @@ const supabase = createClient(
   'https://zeewsrfkbtllbejjkveq.supabase.co',
   'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv'
 );
-// Share the client with the storefront script below.
-window.dailzoSupabase = supabase;
 window.dailzoSessionUser = null;
 const authMessage = (message) => {
   const el = document.getElementById('authMessage');
@@ -351,6 +340,17 @@ window.logoutDailzo = async () => {
 };
 supabase.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user || null));
 supabase.auth.getSession().then(({ data }) => updateAuthUI(data?.session?.user || null));
+
+// Load real catalogue rows from Supabase and pass them to the storefront script.
+window.dailzoLoadProducts = async () => {
+  const { data, error } = await supabase.from('Products').select('*').order('id', { ascending: true });
+  if (error) {
+    window.dispatchEvent(new CustomEvent('dailzo-products-error', { detail: error.message }));
+    return;
+  }
+  window.dispatchEvent(new CustomEvent('dailzo-products-loaded', { detail: data || [] }));
+};
+window.dailzoLoadProducts();
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { window.closeAuth(); window.closeAccount(); } });
 </script>
 
@@ -365,44 +365,22 @@ const defaults=[
  {id:7,name:'Bath Soap',sub:'Pack of 2',price:58,emoji:'🧼',cat:'Personal Care'},
  {id:8,name:'Dishwash Liquid',sub:'500 ml',price:89,emoji:'🧴',cat:'Home Care'}
 ];
-let products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||defaults;
-let productsSource='demo';
-async function loadSupabaseProducts(){
-  try{
-    const client=window.dailzoSupabase;
-    if(!client) throw new Error('Supabase client is not available yet.');
-    const {data,error}=await client.from('Products').select('*').order('id',{ascending:true});
-    if(error) throw error;
-    if(!Array.isArray(data)) throw new Error('Unexpected product response.');
-    const mapped=data.map((row,index)=>{
-      const name=row.Name ?? row.name ?? row.Product_name ?? row.product_name ?? row.title ?? '';
-      const price=Number(row.Price ?? row.price ?? row.sale_price ?? row.selling_price ?? 0);
-      const category=String(row.Category ?? row.category ?? 'Grocery');
-      const image=row.Image ?? row.image ?? row.image_url ?? row.Image_URL ?? '';
-      const emojiMap={'Dairy':'🥛','Snacks':'🍪','Grocery':'🌾','Drinks':'🧃','Personal Care':'🧴','Home Care':'🧹','Fruits':'🍎'};
-      return {id:row.id ?? ('db-'+index),name:String(name||'Unnamed product'),sub:String(row.Unit ?? row.unit ?? row.Description ?? row.description ?? category),price,emoji:emojiMap[category]||'🛒',cat:category,image:String(image||'')};
-    }).filter(p=>p.name && Number.isFinite(p.price) && p.price>=0);
-    products=mapped;
-    productsSource='supabase';
-    renderProducts(); renderCart();
-    const notice=document.querySelector('#home .notice');
-    if(notice) notice.textContent=mapped.length
-      ? 'Products are being loaded from the Dailzo store database.'
-      : 'Supabase connected, but the Products table is empty. Add a product in the admin panel.';
-    if(!mapped.length) document.getElementById('productHeading').textContent='No products in store yet';
-  }catch(error){
-    console.error('Dailzo product loading failed:',error);
-    productsSource='demo';
-    products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||defaults;
-    renderProducts();
-    const notice=document.querySelector('#home .notice');
-    if(notice) notice.textContent='Could not load live products: '+(error?.message||String(error))+' Showing demo products for now.';
-  }
-}
+let products=defaults.slice();
+// Supabase is the source of truth for products; local demo products are only a fallback if the database cannot be reached.
+window.addEventListener('dailzo-products-loaded', event => {
+ const rows=event.detail || [];
+ if (!rows.length) { products=[]; renderCategories(); renderProducts(); return; }
+ products=rows.map((r,i)=>({id:r.id ?? (i+1),name:String(r.Name ?? r.name ?? r.Product_name ?? r.product_name ?? r.title ?? 'Unnamed product'),price:Number(r.Price ?? r.price ?? r.sale_price ?? r.selling_price ?? 0),cat:String(r.Category ?? r.category ?? r.cat ?? 'Other'),stock:Number(r.Stock ?? r.stock ?? 0),image:String(r.Image ?? r.image ?? r.Image_URL ?? r.image_url ?? ''),sub:String(r.Sub ?? r.sub ?? r.Unit ?? r.unit ?? ''),emoji:'🛍️'})).filter(p=>p.name && Number.isFinite(p.price) && p.price>=0);
+ renderCategories(); renderProducts(); renderCart();
+});
+window.addEventListener('dailzo-products-error', event => {
+ const box=document.getElementById('products'); if(box) box.innerHTML='<div class="empty">Could not load products from database: '+String(event.detail).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))+'</div>';
+});
 let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
 const money=n=>'₹'+Number(n).toLocaleString('en-IN');
 function save(){localStorage.setItem('dailzoProducts',JSON.stringify(products));localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
-function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.image?`<img src="${p.image}" alt="${p.name}" loading="lazy" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`:p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
+function renderCategories(){const box=document.getElementById('categoryList');if(!box)return;const icons={'Dairy':'🥛','Snacks':'🍪','Grocery':'🌾','Drinks':'🧃','Personal Care':'🧴','Home Care':'🧹','Fruits':'🍎','fruita':'🍊','Vegetables':'🥬'};box.replaceChildren();const add=(label,icon)=>{const b=document.createElement('button');b.className='cat';b.type='button';const e=document.createElement('span');e.className='emoji';e.textContent=icon;b.append(e,document.createTextNode(label));b.addEventListener('click',()=>setCat(label==='All items'?'All':label));box.appendChild(b);};add('All items','🛒');[...new Set(products.map(p=>String(p.cat||'Other').trim()).filter(Boolean))].forEach(c=>add(c,icons[c]||'🛍️'));}
+function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.image?`<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`:p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
 function setCat(c){activeCat=c;renderProducts();document.getElementById('search').value='';}
 function changeQty(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];save();renderProducts();renderCart();}
 function totalCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
@@ -417,7 +395,7 @@ function renderOrders(){document.getElementById('orderHistory').innerHTML=orders
 function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
 function addProduct(){let name=document.getElementById('newName').value.trim(),price=Number(document.getElementById('newPrice').value),emoji=document.getElementById('newEmoji').value.trim()||'🛒',cat=document.getElementById('newCat').value;if(!name||price<=0){document.getElementById('adminMsg').textContent='Enter a product name and a price greater than zero.';return;}products.unshift({id:Date.now(),name,price,emoji,cat,sub:'Everyday essential'});save();renderProducts();document.getElementById('adminMsg').textContent='Added to this device’s demo catalogue.';document.getElementById('newName').value='';document.getElementById('newPrice').value='';document.getElementById('newEmoji').value='';}
-const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderProducts();renderCart();renderOrders();loadSupabaseProducts();
+const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderCategories();renderProducts();renderCart();renderOrders();
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
 }
