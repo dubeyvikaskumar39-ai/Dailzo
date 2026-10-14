@@ -341,14 +341,42 @@ window.logoutDailzo = async () => {
 supabase.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user || null));
 supabase.auth.getSession().then(({ data }) => updateAuthUI(data?.session?.user || null));
 
-// Load real catalogue rows from Supabase and pass them to the storefront script.
+// Load the product catalogue from Firebase Firestore. Supabase login remains unchanged.
 window.dailzoLoadProducts = async () => {
-  const { data, error } = await supabase.from('Products').select('*').order('id', { ascending: true });
-  if (error) {
-    window.dispatchEvent(new CustomEvent('dailzo-products-error', { detail: error.message }));
-    return;
+  try {
+    const [{ initializeApp }, { getFirestore, collection, getDocs }] =
+      await Promise.all([
+        import("https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js")
+      ]);
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAADmKgQFARoB1Ew6H_5_tQ_4B7iaN5q64",
+      authDomain: "dailzo-test.firebaseapp.com",
+      projectId: "dailzo-test",
+      storageBucket: "dailzo-test.firebasestorage.app",
+      messagingSenderId: "1049473382013",
+      appId: "1:1049473382013:web:15d57b6e8ae9638988e314"
+    };
+
+    const app = initializeApp(firebaseConfig, "dailzo-catalog");
+    const db = getFirestore(app);
+    const snapshot = await getDocs(collection(db, "Product"));
+    const rows = snapshot.docs.map((doc, index) => ({
+      ...doc.data(),
+      id: index + 1
+    }));
+
+    window.dispatchEvent(
+      new CustomEvent("dailzo-products-loaded", { detail: rows })
+    );
+  } catch (error) {
+    window.dispatchEvent(
+      new CustomEvent("dailzo-products-error", {
+        detail: error?.message || "Could not load products from Firebase."
+      })
+    );
   }
-  window.dispatchEvent(new CustomEvent('dailzo-products-loaded', { detail: data || [] }));
 };
 window.dailzoLoadProducts();
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { window.closeAuth(); window.closeAccount(); } });
