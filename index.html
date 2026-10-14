@@ -20,11 +20,28 @@ nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid 
 .screen{display:none}.screen.active{display:block}.empty{text-align:center;padding:40px 15px;color:var(--muted)}.checkout{width:100%;background:var(--green);color:white;border:0;padding:14px;border-radius:11px;font-weight:800;margin-top:15px}.cartitem{display:flex;align-items:center;gap:10px;background:#fff;padding:12px;border-radius:12px;margin:8px 0}.cartitem .emoji{font-size:30px}.cartitem .detail{flex:1;font-size:13px}.qty{display:flex;align-items:center;gap:9px}.qty button{border:1px solid var(--line);background:white;border-radius:7px;padding:4px 9px}.total{background:#fff;border-radius:12px;padding:15px;line-height:2;font-size:13px}.total strong{font-size:16px}
 .admin input{width:100%;padding:12px;margin:6px 0;border:1px solid var(--line);border-radius:9px}.admin button{margin-top:8px}.pill{display:inline-block;background:#fff3b3;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:700}
 @media(min-width:600px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.hero h1{font-size:29px}.pic{height:120px}}
+
+.authbar{display:flex;align-items:center;gap:8px;margin-top:10px}
+.authbar button{border:1px solid var(--green);border-radius:9px;padding:8px 11px;background:#fff;color:var(--green);font-weight:800;font-size:12px}
+.authbar .who{font-size:11px;color:#333;flex:1;overflow-wrap:anywhere}
+.authmodal{position:fixed;inset:0;background:#0008;z-index:30;display:none;align-items:center;justify-content:center;padding:16px}
+.authmodal.open{display:flex}.authpanel{background:#fff;width:100%;max-width:410px;border-radius:18px;padding:20px;box-shadow:0 15px 45px #0003}
+.authpanel h2{margin:0 0 6px}.authpanel p{font-size:12px;color:var(--muted);line-height:1.5}
+.authpanel label{display:block;font-size:12px;font-weight:700;margin:12px 0 5px}
+.authpanel input{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px}
+.authpanel .authmsg{font-size:12px;line-height:1.5;background:#f5f5f5;border-radius:9px;padding:10px;margin-top:10px;overflow-wrap:anywhere}
+.authpanel .authactions{display:flex;gap:8px}.authpanel .authactions button{flex:1}
+.authpanel .primary{background:var(--green);color:white;border:0}.authpanel .secondary{background:white;color:var(--green);border:1px solid var(--green)}
 </style></head>
 <body>
 <header>
  <div class="brand"><div class="logo">D</div> DAILZO</div>
  <div class="tag">Daily needs, delivered. · Redma, Daltonganj</div>
+  <div class="authbar">
+    <span class="who" id="authStatus">Browsing as guest — login required at checkout</span>
+    <button id="openLoginBtn" onclick="openAuth()">Log in</button>
+    <button id="logoutBtn" style="display:none" onclick="logoutDailzo()">Log out</button>
+  </div>
  <div class="location">📍 Delivering to <span id="addressLabel">Your area</span> ▾</div>
  <input id="search" class="search" placeholder="🔎  Search milk, bread, snacks..." oninput="renderProducts()">
 </header>
@@ -43,14 +60,102 @@ nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid 
  <button class="cat" onclick="setCat('Fruits')"><span class="emoji">🍎</span>Fruits</button>
  </div>
  <h2 id="productHeading">Popular near you</h2><div id="products" class="grid"></div>
- <p class="notice">DEMO VERSION: Prices and products are examples. No real order or payment is processed yet.</p>
+ <p class="notice">DEMO STORE: Browse products freely. Login is required before checkout. Real order placement is not connected yet.</p>
 </section>
 <section id="cart" class="screen"><h2>Your cart</h2><div id="cartItems"></div><div id="cartTotals"></div><button class="checkout" onclick="checkout()">Continue to checkout</button></section>
 <section id="orders" class="screen"><h2>Your orders</h2><div id="orderHistory" class="empty">Your placed demo orders will appear here.</div></section>
 <section id="admin" class="screen admin"><h2>Store manager</h2><p class="notice">Demo admin: add a product to this device's local demo catalogue. This is not a secure live admin panel.</p><input id="newName" placeholder="Product name"><input id="newPrice" type="number" placeholder="Price in ₹"><input id="newEmoji" placeholder="Emoji, e.g. 🥛"><select id="newCat" style="width:100%;padding:12px;border:1px solid #eee;border-radius:9px"><option>Dairy</option><option>Snacks</option><option>Grocery</option><option>Drinks</option><option>Personal Care</option><option>Home Care</option><option>Fruits</option></select><button class="checkout" onclick="addProduct()">Add demo product</button><div id="adminMsg"></div><h2>Orders for your store</h2><div id="adminOrders" class="notice">No demo orders yet.</div><h2>Next step for a real app</h2><p class="notice">A live version needs a shared database, secure admin login, delivery area rules, order notifications, payment gateway setup, and hosting. Demo orders on this file stay on this device only.</p></section>
 </main>
 <button id="cartbar" class="cartbar" onclick="go('cart')"><span id="cartbarText">View cart</span><span id="cartbarTotal">₹0 →</span></button>
+
+<div class="authmodal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="authpanel">
+    <h2 id="authTitle">Log in to Dailzo</h2>
+    <p>Browse freely. Sign in with your email before placing an order.</p>
+    <label for="authEmail">Email address</label>
+    <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
+    <label for="authPassword">Password</label>
+    <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password (8+ characters)">
+    <div class="authactions">
+      <button class="checkout primary" id="authLoginBtn" onclick="dailzoLogin()">Log in</button>
+      <button class="checkout secondary" id="authSignupBtn" onclick="dailzoSignup()">Create account</button>
+    </div>
+    <button class="checkout secondary" style="margin-top:8px" onclick="dailzoResetPassword()">Forgot password?</button>
+    <button class="checkout secondary" style="margin-top:8px" onclick="closeAuth()">Close</button>
+    <div class="authmsg" id="authMessage">Use your Supabase email and password.</div>
+  </div>
+</div>
+
 <nav><button class="selected" id="nav-home" onclick="go('home')"><span>🏠</span>Home</button><button id="nav-orders" onclick="go('orders')"><span>📦</span>Orders</button><button id="nav-cart" onclick="go('cart')"><span>🛍️</span>Cart</button><button id="nav-admin" onclick="go('admin')"><span>⚙️</span>Manage</button></nav>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const supabase = createClient(
+  'https://zeewsrfkbtllbejjkveq.supabase.co',
+  'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv'
+);
+window.dailzoSessionUser = null;
+const authMessage = (message) => {
+  const el = document.getElementById('authMessage');
+  if (el) el.textContent = message;
+};
+function updateAuthUI(user) {
+  window.dailzoSessionUser = user || null;
+  const status = document.getElementById('authStatus');
+  const loginBtn = document.getElementById('openLoginBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (status) status.textContent = user ? 'Logged in: ' + (user.email || 'customer') : 'Browsing as guest — login required at checkout';
+  if (loginBtn) loginBtn.style.display = user ? 'none' : '';
+  if (logoutBtn) logoutBtn.style.display = user ? '' : 'none';
+}
+window.openAuth = () => document.getElementById('authModal').classList.add('open');
+window.closeAuth = () => document.getElementById('authModal').classList.remove('open');
+
+window.dailzoLogin = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) return authMessage('Please enter both email and password.');
+  const button = document.getElementById('authLoginBtn');
+  button.disabled = true; authMessage('Logging in…');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  button.disabled = false;
+  if (error) return authMessage('Login failed: ' + error.message);
+  updateAuthUI(data.user);
+  authMessage('Login successful. You can now continue to checkout.');
+  setTimeout(window.closeAuth, 900);
+};
+window.dailzoSignup = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if (!email || !password) return authMessage('Please enter both email and password.');
+  if (password.length < 8) return authMessage('Use a password with at least 8 characters.');
+  const button = document.getElementById('authSignupBtn');
+  button.disabled = true; authMessage('Creating account…');
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  button.disabled = false;
+  if (error) return authMessage('Account creation failed: ' + error.message);
+  if (data.session) {
+    updateAuthUI(data.user); authMessage('Account created and logged in.');
+    setTimeout(window.closeAuth, 900);
+  } else {
+    authMessage('Account request submitted. Check your email for a confirmation link, then log in.');
+  }
+};
+window.dailzoResetPassword = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  if (!email) return authMessage('Enter your email address first.');
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+  authMessage(error ? 'Password reset failed: ' + error.message : 'If this email belongs to an account, a reset email has been sent.');
+};
+window.logoutDailzo = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) return alert('Log out failed: ' + error.message);
+  updateAuthUI(null);
+};
+supabase.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user || null));
+supabase.auth.getSession().then(({ data }) => updateAuthUI(data?.session?.user || null));
+</script>
+
 <script>
 const defaults=[
  {id:1,name:'Full Cream Milk',sub:'500 ml',price:32,emoji:'🥛',cat:'Dairy'},
@@ -74,7 +179,7 @@ function totalPrice(){return products.reduce((s,p)=>s+p.price*(cart[p.id]||0),0)
 function updateCartBar(){let n=totalCount();let b=document.getElementById('cartbar');b.style.display=n?'flex':'none';document.getElementById('cartbarText').textContent=n+' item'+(n===1?'':'s')+' in cart';document.getElementById('cartbarTotal').textContent=money(totalPrice())+' →';}
 function renderCart(){let entries=products.filter(p=>cart[p.id]);document.getElementById('cartItems').innerHTML=entries.length?entries.map(p=>`<div class="cartitem"><div class="emoji">${p.emoji}</div><div class="detail"><b>${p.name}</b><br>${money(p.price)} each</div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button>${cart[p.id]}<button onclick="changeQty(${p.id},1)">+</button></div></div>`).join(''):'<div class="empty">🛍️<br>Your cart is empty.<br>Add a few everyday essentials first.</div>';document.getElementById('cartTotals').innerHTML=entries.length?`<div class="total">Item total <b style="float:right">${money(totalPrice())}</b><br>Delivery fee <b style="float:right">Calculated at launch</b><hr><strong>Subtotal <b style="float:right">${money(totalPrice())}</b></strong></div>`:'';updateCartBar();}
 function go(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(s).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('selected'));document.getElementById('nav-'+s).classList.add('selected');document.getElementById('cartbar').style.display=(s==='home'&&totalCount())?'flex':'none';if(s==='cart')renderCart();if(s==='orders')renderOrders();window.scrollTo(0,0);}
-function checkout(){if(!totalCount()){alert('Your cart is empty.');return;}let name=prompt('Your name (demo checkout):');if(!name)return;let phone=prompt('Mobile number (demo only):');if(!phone)return;let address=prompt('Delivery address (demo only):');if(!address)return;orders.unshift({id:'DZ'+Date.now().toString().slice(-6),name,phone,address,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({name:p.name,qty:cart[p.id]})),status:'Demo order received',date:new Date().toLocaleString()});cart={};save();renderCart();renderProducts();renderOrders();alert('Demo order created on this device. No real store has received it.');go('orders');}
+function checkout(){if(!window.dailzoSessionUser){window.openAuth();document.getElementById('authMessage').textContent='Please log in before checkout. You can browse products without logging in.';return;}if(!totalCount()){alert('Your cart is empty.');return;}let name=prompt('Your name (demo checkout):');if(!name)return;let phone=prompt('Mobile number (demo only):');if(!phone)return;let address=prompt('Delivery address (demo only):');if(!address)return;orders.unshift({id:'DZ'+Date.now().toString().slice(-6),name,phone,address,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({name:p.name,qty:cart[p.id]})),status:'Demo order received',date:new Date().toLocaleString()});cart={};save();renderCart();renderProducts();renderOrders();alert('Demo order created on this device. No real store has received it.');go('orders');}
 function renderOrders(){document.getElementById('orderHistory').innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><span class="sub">${o.date} · ${o.status}</span></div><b>${money(o.total)}</b></div>`).join(''):'<div class="empty">Your placed demo orders will appear here.</div>';renderAdminOrders();}
 function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
