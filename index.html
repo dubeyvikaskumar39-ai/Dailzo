@@ -258,6 +258,8 @@ const supabase = createClient(
   'https://zeewsrfkbtllbejjkveq.supabase.co',
   'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv'
 );
+// Share the client with the storefront script below.
+window.dailzoSupabase = supabase;
 window.dailzoSessionUser = null;
 const authMessage = (message) => {
   const el = document.getElementById('authMessage');
@@ -367,7 +369,9 @@ let products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||default
 let productsSource='demo';
 async function loadSupabaseProducts(){
   try{
-    const {data,error}=await supabase.from('Products').select('*').order('id',{ascending:true});
+    const client=window.dailzoSupabase;
+    if(!client) throw new Error('Supabase client is not available yet.');
+    const {data,error}=await client.from('Products').select('*').order('id',{ascending:true});
     if(error) throw error;
     if(!Array.isArray(data)) throw new Error('Unexpected product response.');
     const mapped=data.map((row,index)=>{
@@ -392,7 +396,7 @@ async function loadSupabaseProducts(){
     products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||defaults;
     renderProducts();
     const notice=document.querySelector('#home .notice');
-    if(notice) notice.textContent='Could not load live products from the store database. Showing demo products for now. Check Products table access and column names.';
+    if(notice) notice.textContent='Could not load live products: '+(error?.message||String(error))+' Showing demo products for now.';
   }
 }
 let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
