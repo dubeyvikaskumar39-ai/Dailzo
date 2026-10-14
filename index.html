@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#f4fbf6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>Dailzo — Daily needs, delivered</title>
+<title>Dailzo — Grocery Delivery</title>
 <style>
 :root{--yellow:#f8d82e;--green:#176b36;--ink:#202020;--muted:#6b7280;--line:#ececec;--bg:#f7f7f5}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{cursor:pointer}
@@ -125,6 +125,19 @@ nav{left:12px;right:12px;bottom:8px;border:1px solid #edf1ed;border-radius:23px;
 .checkout-step{display:flex;gap:7px;margin:0 0 18px}.checkout-step span{flex:1;border-radius:20px;background:#e7eee9;color:#738078;text-align:center;padding:8px 4px;font-size:11px;font-weight:800}.checkout-step span.active{background:#dff5e5;color:#087b43}
 .checkout-card{background:#fff;border:1px solid #e7eee9;border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 5px 18px #143b2207}.checkout-card h3{font-size:14px;margin:0 0 12px}.checkout-label{display:block;font-size:11px;font-weight:800;color:#53675d;margin:11px 0 6px}.checkout-field{width:100%;border:1px solid #dfe9e2;background:#fbfdfb;border-radius:12px;padding:13px 12px;outline:none;font-size:14px;color:#102b27}.checkout-field:focus{border-color:#36ad70;box-shadow:0 0 0 3px #078a4b12}.checkout-summary-line{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;color:#56665e}.checkout-summary-line.total-line{border-top:1px dashed #dce8df;margin-top:6px;padding-top:12px;font-size:16px;font-weight:900;color:#102b27}.checkout-submit{width:100%;border:0;border-radius:15px;padding:15px;background:linear-gradient(100deg,#078a4b,#0aa85a);color:white;font-size:15px;font-weight:900;box-shadow:0 8px 18px #078a4b28;margin-top:12px}.checkout-footnote{text-align:center;color:#7b8981;font-size:10px;line-height:1.5;margin:10px 8px 0}
 @media(min-width:600px){.checkout-modal{align-items:center;padding:18px}.checkout-panel{border-radius:28px;max-height:90vh}}
+
+
+/* Premium checkout refinements */
+.checkout-panel{position:relative;background:linear-gradient(180deg,#f3fbf5 0%,#ffffff 26%);border:1px solid #e4f0e7}
+.checkout-panel:before{content:"";display:block;width:42px;height:5px;border-radius:10px;background:#cbd9cf;margin:0 auto 15px}
+.checkout-head{padding:4px 2px 13px;border-bottom:1px solid #e7f0e9}
+.checkout-head h2{font-size:23px;font-weight:850;color:#163c2b}
+.checkout-step span{padding:9px 5px;letter-spacing:.1px}
+.checkout-card{padding:17px;border-radius:20px;box-shadow:0 8px 22px #123c2208}
+.checkout-card h3{font-size:14px;letter-spacing:.1px;color:#173c2b}
+.checkout-field{min-height:47px;background:#fcfefc}
+.checkout-submit{position:sticky;bottom:0;z-index:2;margin-top:14px;padding:16px;border-radius:16px;font-size:15px;letter-spacing:.1px}
+.checkout-footnote{padding:4px 12px 0}
 
 </style></head>
 <body>
