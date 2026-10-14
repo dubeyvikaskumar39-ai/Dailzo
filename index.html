@@ -201,6 +201,8 @@ const supabase = createClient(
   'https://zeewsrfkbtllbejjkveq.supabase.co',
   'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv'
 );
+// Shared client: customer site reads the same Products table managed in the separate admin panel.
+window.dailzoSupabaseClient = supabase;
 window.dailzoSessionUser = null;
 const authMessage = (message) => {
   const el = document.getElementById('authMessage');
@@ -292,6 +294,8 @@ window.logoutDailzo = async () => {
 };
 supabase.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user || null));
 supabase.auth.getSession().then(({ data }) => updateAuthUI(data?.session?.user || null));
+// Load live products from the shared Supabase database.
+window.loadDailzoProducts?.();
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { window.closeAuth(); window.closeAccount(); } });
 </script>
 
@@ -310,7 +314,9 @@ let products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||default
 let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
 const money=n=>'₹'+Number(n).toLocaleString('en-IN');
 function save(){localStorage.setItem('dailzoProducts',JSON.stringify(products));localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
-function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
+function escapeHTML(value){return String(value??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
+function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.image?`<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:100%;height:100%;object-fit:contain;border-radius:15px" onerror="this.remove()">`:p.emoji}</div><h3>${escapeHTML(p.name)}</h3><div class="sub">${escapeHTML(p.sub||p.cat||'Everyday essential')}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" aria-label="Add ${escapeHTML(p.name)} to cart" onclick="changeQty('${String(p.id).replace(/'/g,"\\'")}',1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found yet.</div>';updateCartBar();}
+window.loadDailzoProducts=async function(){const client=window.dailzoSupabaseClient;if(!client)return;const heading=document.getElementById('productHeading');if(heading)heading.textContent='Loading products…';const {data,error}=await client.from('Products').select('*').limit(200);if(error){console.error('Dailzo product sync:',error.message);if(heading)heading.textContent='Popular near you';return;}products=(data||[]).map(p=>{const get=(...keys)=>{for(const key of keys){if(p[key]!==undefined&&p[key]!==null)return p[key];const actual=Object.keys(p).find(k=>k.toLowerCase()===key.toLowerCase());if(actual&&p[actual]!==undefined&&p[actual]!==null)return p[actual];}return '';};const name=String(get('Name','name')||'Product');const category=String(get('Category','category')||'Grocery');const image=String(get('Image','image')||'');return {id:get('id')||name,name,price:Number(get('Price','price')||0),stock:Number(get('Stock','stock')||0),cat:category,sub:category,image,emoji:'🛒'};}).filter(p=>p.stock===undefined||Number(p.stock)>=0);renderProducts();renderCart();renderOrders();};
 function setCat(c){activeCat=c;renderProducts();document.getElementById('search').value='';}
 function changeQty(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];save();renderProducts();renderCart();}
 function totalCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
