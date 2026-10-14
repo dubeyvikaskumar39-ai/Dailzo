@@ -115,6 +115,17 @@ nav{left:12px;right:12px;bottom:8px;border:1px solid #edf1ed;border-radius:23px;
 .plus-product{width:100%;min-height:58px!important;border:0!important;border-radius:18px!important;background:linear-gradient(135deg,#07894b,#10ad63)!important;color:#fff!important;font-weight:800!important;font-size:16px!important;box-shadow:0 8px 20px #07894b2b!important;padding:8px 16px!important}
 .plus-product .plus-icon{width:40px!important;height:40px!important;flex:0 0 40px!important;border-radius:50%!important;background:#fff!important;color:#07894b!important;font-size:30px!important;font-weight:500!important;box-shadow:0 2px 8px #003b2015!important}
 
+
+/* Modern checkout sheet */
+.checkout-modal{position:fixed;inset:0;background:rgba(12,35,25,.48);backdrop-filter:blur(5px);z-index:45;display:none;align-items:flex-end;justify-content:center;padding:0}
+.checkout-modal.open{display:flex}
+.checkout-panel{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:#f8fcf9;border-radius:28px 28px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -15px 45px #092d1d22;animation:checkoutUp .22s ease-out}
+@keyframes checkoutUp{from{transform:translateY(24px);opacity:.65}to{transform:translateY(0);opacity:1}}
+.checkout-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}.checkout-back{width:40px;height:40px;border:0;border-radius:14px;background:#eaf6ed;color:#087b43;font-size:22px}.checkout-head h2{margin:0;font-size:22px;letter-spacing:-.5px}.checkout-head p{margin:4px 0 0;color:#718078;font-size:12px}
+.checkout-step{display:flex;gap:7px;margin:0 0 18px}.checkout-step span{flex:1;border-radius:20px;background:#e7eee9;color:#738078;text-align:center;padding:8px 4px;font-size:11px;font-weight:800}.checkout-step span.active{background:#dff5e5;color:#087b43}
+.checkout-card{background:#fff;border:1px solid #e7eee9;border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 5px 18px #143b2207}.checkout-card h3{font-size:14px;margin:0 0 12px}.checkout-label{display:block;font-size:11px;font-weight:800;color:#53675d;margin:11px 0 6px}.checkout-field{width:100%;border:1px solid #dfe9e2;background:#fbfdfb;border-radius:12px;padding:13px 12px;outline:none;font-size:14px;color:#102b27}.checkout-field:focus{border-color:#36ad70;box-shadow:0 0 0 3px #078a4b12}.checkout-summary-line{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px;color:#56665e}.checkout-summary-line.total-line{border-top:1px dashed #dce8df;margin-top:6px;padding-top:12px;font-size:16px;font-weight:900;color:#102b27}.checkout-submit{width:100%;border:0;border-radius:15px;padding:15px;background:linear-gradient(100deg,#078a4b,#0aa85a);color:white;font-size:15px;font-weight:900;box-shadow:0 8px 18px #078a4b28;margin-top:12px}.checkout-footnote{text-align:center;color:#7b8981;font-size:10px;line-height:1.5;margin:10px 8px 0}
+@media(min-width:600px){.checkout-modal{align-items:center;padding:18px}.checkout-panel{border-radius:28px;max-height:90vh}}
+
 </style></head>
 <body>
 <header>
@@ -144,6 +155,27 @@ nav{left:12px;right:12px;bottom:8px;border:1px solid #edf1ed;border-radius:23px;
 
 </main>
 <button id="cartbar" class="cartbar" onclick="go('cart')"><span id="cartbarText">View cart</span><span id="cartbarTotal">₹0 →</span></button>
+
+
+<div class="checkout-modal" id="checkoutModal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle" onclick="if(event.target===this)closeCheckoutModal()">
+ <div class="checkout-panel">
+  <div class="checkout-head"><button class="checkout-back" onclick="closeCheckoutModal()" aria-label="Back">←</button><div><h2 id="checkoutTitle">Delivery details</h2><p>Almost there — where should we deliver?</p></div></div>
+  <div class="checkout-step"><span class="active">1 · Address</span><span>2 · Review</span><span>3 · Place order</span></div>
+  <form id="checkoutForm" onsubmit="submitCheckout(event)">
+   <div class="checkout-card"><h3>👤 Contact details</h3>
+    <label class="checkout-label" for="checkoutName">Full name</label><input class="checkout-field" id="checkoutName" name="name" autocomplete="name" placeholder="Enter your name" required maxlength="80">
+    <label class="checkout-label" for="checkoutPhone">Mobile number</label><input class="checkout-field" id="checkoutPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10-digit mobile number" pattern="[0-9+() -]{10,16}" required>
+   </div>
+   <div class="checkout-card"><h3>📍 Delivery address</h3>
+    <label class="checkout-label" for="checkoutAddress">House no., street, area</label><textarea class="checkout-field" id="checkoutAddress" name="address" rows="3" autocomplete="street-address" placeholder="Enter complete delivery address" required maxlength="300" style="resize:vertical"></textarea>
+    <label class="checkout-label" for="checkoutLandmark">Landmark (optional)</label><input class="checkout-field" id="checkoutLandmark" name="landmark" placeholder="Nearby landmark">
+   </div>
+   <div class="checkout-card"><h3>🛍️ Order summary</h3><div id="checkoutSummary"></div></div>
+   <button class="checkout-submit" type="submit">Place demo order · <span id="checkoutTotalLabel">₹0</span> →</button>
+   <p class="checkout-footnote">This checkout is currently a demo. Your order is not yet sent to the store database.</p>
+  </form>
+ </div>
+</div>
 
 <div class="accountmodal" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountTitle" onclick="if(event.target===this)closeAccount()">
  <div class="account-panel">
@@ -201,8 +233,6 @@ const supabase = createClient(
   'https://zeewsrfkbtllbejjkveq.supabase.co',
   'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv'
 );
-// Shared client: customer site reads the same Products table managed in the separate admin panel.
-window.dailzoSupabaseClient = supabase;
 window.dailzoSessionUser = null;
 const authMessage = (message) => {
   const el = document.getElementById('authMessage');
@@ -294,8 +324,6 @@ window.logoutDailzo = async () => {
 };
 supabase.auth.onAuthStateChange((_event, session) => updateAuthUI(session?.user || null));
 supabase.auth.getSession().then(({ data }) => updateAuthUI(data?.session?.user || null));
-// Load live products from the shared Supabase database.
-window.loadDailzoProducts?.();
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { window.closeAuth(); window.closeAccount(); } });
 </script>
 
@@ -314,9 +342,7 @@ let products=JSON.parse(localStorage.getItem('dailzoProducts')||'null')||default
 let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
 const money=n=>'₹'+Number(n).toLocaleString('en-IN');
 function save(){localStorage.setItem('dailzoProducts',JSON.stringify(products));localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
-function escapeHTML(value){return String(value??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
-function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.image?`<img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" style="width:100%;height:100%;object-fit:contain;border-radius:15px" onerror="this.remove()">`:p.emoji}</div><h3>${escapeHTML(p.name)}</h3><div class="sub">${escapeHTML(p.sub||p.cat||'Everyday essential')}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" aria-label="Add ${escapeHTML(p.name)} to cart" onclick="changeQty('${String(p.id).replace(/'/g,"\\'")}',1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found yet.</div>';updateCartBar();}
-window.loadDailzoProducts=async function(){const client=window.dailzoSupabaseClient;if(!client)return;const heading=document.getElementById('productHeading');if(heading)heading.textContent='Loading products…';const {data,error}=await client.from('Products').select('*').limit(200);if(error){console.error('Dailzo product sync:',error.message);if(heading)heading.textContent='Popular near you';return;}products=(data||[]).map(p=>{const get=(...keys)=>{for(const key of keys){if(p[key]!==undefined&&p[key]!==null)return p[key];const actual=Object.keys(p).find(k=>k.toLowerCase()===key.toLowerCase());if(actual&&p[actual]!==undefined&&p[actual]!==null)return p[actual];}return '';};const name=String(get('Name','name')||'Product');const category=String(get('Category','category')||'Grocery');const image=String(get('Image','image')||'');return {id:get('id')||name,name,price:Number(get('Price','price')||0),stock:Number(get('Stock','stock')||0),cat:category,sub:category,image,emoji:'🛒'};}).filter(p=>p.stock===undefined||Number(p.stock)>=0);renderProducts();renderCart();renderOrders();};
+function renderProducts(){const q=(document.getElementById('search')?.value||'').toLowerCase();const list=products.filter(p=>(activeCat==='All'||p.cat===activeCat)&&(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)));document.getElementById('productHeading').textContent=activeCat==='All'?'Popular near you':activeCat+' essentials';document.getElementById('products').innerHTML=list.map(p=>`<article class="product"><div class="pic">${p.emoji}</div><h3>${p.name}</h3><div class="sub">${p.sub||p.cat}</div><div class="row"><span class="price">${money(p.price)}</span><button class="add ${cart[p.id]?'active':''}" onclick="changeQty(${p.id},1)">${cart[p.id]?'+'+cart[p.id]:'+'}</button></div></article>`).join('')||'<div class="empty">No products found.</div>';updateCartBar();}
 function setCat(c){activeCat=c;renderProducts();document.getElementById('search').value='';}
 function changeQty(id,d){cart[id]=(cart[id]||0)+d;if(cart[id]<=0)delete cart[id];save();renderProducts();renderCart();}
 function totalCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
@@ -324,7 +350,9 @@ function totalPrice(){return products.reduce((s,p)=>s+p.price*(cart[p.id]||0),0)
 function updateCartBar(){let n=totalCount();let b=document.getElementById('cartbar');b.style.display=n?'flex':'none';document.getElementById('cartbarText').textContent=n+' item'+(n===1?'':'s')+' in cart';document.getElementById('cartbarTotal').textContent=money(totalPrice())+' →';}
 function renderCart(){let entries=products.filter(p=>cart[p.id]);document.getElementById('cartItems').innerHTML=entries.length?entries.map(p=>`<div class="cartitem"><div class="emoji">${p.emoji}</div><div class="detail"><b>${p.name}</b><br>${money(p.price)} each</div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button>${cart[p.id]}<button onclick="changeQty(${p.id},1)">+</button></div></div>`).join(''):'<div class="empty">🛍️<br>Your cart is empty.<br>Add a few everyday essentials first.</div>';document.getElementById('cartTotals').innerHTML=entries.length?`<div class="total">Item total <b style="float:right">${money(totalPrice())}</b><br>Delivery fee <b style="float:right">Calculated at launch</b><hr><strong>Subtotal <b style="float:right">${money(totalPrice())}</b></strong></div>`:'';updateCartBar();}
 function go(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(s).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('selected'));document.getElementById('nav-'+s).classList.add('selected');document.getElementById('cartbar').style.display=(s==='home'&&totalCount())?'flex':'none';if(s==='cart')renderCart();if(s==='orders')renderOrders();window.scrollTo(0,0);}
-function checkout(){if(!window.dailzoSessionUser){window.openAuth();document.getElementById('authMessage').textContent='Please log in before checkout. You can browse products without logging in.';return;}if(!totalCount()){alert('Your cart is empty.');return;}let name=prompt('Your name (demo checkout):');if(!name)return;let phone=prompt('Mobile number (demo only):');if(!phone)return;let address=prompt('Delivery address (demo only):');if(!address)return;orders.unshift({id:'DZ'+Date.now().toString().slice(-6),name,phone,address,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({name:p.name,qty:cart[p.id]})),status:'Demo order received',date:new Date().toLocaleString()});cart={};save();renderCart();renderProducts();renderOrders();alert('Demo order created on this device. No real store has received it.');go('orders');}
+function checkout(){if(!window.dailzoSessionUser){window.openAuth();document.getElementById('authMessage').textContent='Please log in before checkout. You can browse products without logging in.';return;}if(!totalCount()){alert('Your cart is empty.');return;}const modal=document.getElementById('checkoutModal');const form=document.getElementById('checkoutForm');const email=window.dailzoSessionUser?.email||'';document.getElementById('checkoutName').value=localStorage.getItem('dailzoProfileName')||'';document.getElementById('checkoutPhone').value=localStorage.getItem('dailzoProfilePhone')||'';document.getElementById('checkoutAddress').value=localStorage.getItem('dailzoDeliveryAddress')||'';const items=products.filter(p=>cart[p.id]);document.getElementById('checkoutSummary').innerHTML=items.map(p=>`<div class=\"checkout-summary-line\"><span>${cart[p.id]} × ${p.name}</span><b>${money(p.price*cart[p.id])}</b></div>`).join('')+`<div class=\"checkout-summary-line\"><span>Delivery fee</span><span>Calculated later</span></div><div class=\"checkout-summary-line total-line\"><span>Subtotal</span><strong>${money(totalPrice())}</strong></div>`;document.getElementById('checkoutTotalLabel').textContent=money(totalPrice());modal.classList.add('open');document.body.style.overflow='hidden';setTimeout(()=>document.getElementById('checkoutName').focus(),80);}
+function closeCheckoutModal(){document.getElementById('checkoutModal').classList.remove('open');document.body.style.overflow='';}
+function submitCheckout(event){event.preventDefault();if(!window.dailzoSessionUser){closeCheckoutModal();window.openAuth();return;}if(!totalCount()){closeCheckoutModal();alert('Your cart is empty.');return;}const name=document.getElementById('checkoutName').value.trim(),phone=document.getElementById('checkoutPhone').value.trim(),address=document.getElementById('checkoutAddress').value.trim(),landmark=document.getElementById('checkoutLandmark').value.trim();if(!name||!phone||!address)return;localStorage.setItem('dailzoProfileName',name);localStorage.setItem('dailzoProfilePhone',phone);localStorage.setItem('dailzoDeliveryAddress',address);const fullAddress=landmark?address+' (Landmark: '+landmark+')':address;orders.unshift({id:'DZ'+Date.now().toString().slice(-6),name,phone,address:fullAddress,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({name:p.name,qty:cart[p.id]})),status:'Demo order received',date:new Date().toLocaleString()});cart={};save();closeCheckoutModal();renderCart();renderProducts();renderOrders();alert('Demo order created on this device. It is not yet sent to the store database.');go('orders');} 
 function renderOrders(){document.getElementById('orderHistory').innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><span class="sub">${o.date} · ${o.status}</span></div><b>${money(o.total)}</b></div>`).join(''):'<div class="empty">Your placed demo orders will appear here.</div>';}
 function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
