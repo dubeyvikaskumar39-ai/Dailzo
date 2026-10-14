@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8d82e">
+<title>Dailzo — Login Test</title>
+<style>
+:root{--yellow:#f8d82e;--green:#176b36;--ink:#202020;--muted:#667085;--line:#e5e7eb;--bg:#f7f7f5}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.card{width:100%;max-width:430px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 10px 35px #0000000b}
+.brand{display:flex;align-items:center;gap:10px;font-size:25px;font-weight:900;margin-bottom:6px}.logo{background:var(--green);color:#fff;border-radius:10px;width:38px;height:38px;display:grid;place-items:center}
+.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 22px}
+label{display:block;font-size:13px;font-weight:700;margin:14px 0 6px}input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
+button{width:100%;padding:13px;border:0;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;margin-top:12px}
+.primary{background:var(--green);color:#fff}.secondary{background:#fff;border:1px solid var(--green);color:var(--green)}
+.status{margin-top:16px;padding:12px;border-radius:10px;background:#f3f4f6;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.small{font-size:12px;color:var(--muted);line-height:1.5;margin-top:16px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand"><span class="logo">D</span> DAILZO</div>
+  <p class="sub">Email login test · Redma, Daltonganj</p>
+  <section id="authBox">
+    <label for="email">Email address</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="Enter password">
+    <button class="primary" id="loginBtn">Log in</button>
+    <button class="secondary" id="signupBtn">Create account</button>
+    <button class="secondary" id="resetBtn">Forgot password?</button>
+  </section>
+  <section id="userBox" class="hidden">
+    <h2>You're logged in ✅</h2>
+    <p id="userEmail"></p>
+    <button class="primary" id="logoutBtn">Log out</button>
+  </section>
+  <div id="status" class="status" role="status">Ready. Use the test email and password you created in Supabase.</div>
+  <p class="small">This page tests Supabase email authentication only. It does not yet connect checkout or save real orders. Never put a Supabase service-role key in a website file.</p>
+</main>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://zeewsrfkbtllbejjkveq.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_AJH3Z0t5JG7VhXApXnDvPg_v3z-L5Xv';
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const $ = (id) => document.getElementById(id);
+const status = (message) => { $('status').textContent = message; };
+const setUser = (user) => {
+  $('authBox').classList.toggle('hidden', !!user);
+  $('userBox').classList.toggle('hidden', !user);
+  $('userEmail').textContent = user ? `Signed in as ${user.email || user.phone || 'user'}` : '';
+};
+
+async function refreshSession() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) status('Could not check session: ' + error.message);
+  setUser(data?.session?.user || null);
+}
+$('loginBtn').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  if (!email || !password) return status('Please enter both email and password.');
+  $('loginBtn').disabled = true;
+  status('Logging in…');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  $('loginBtn').disabled = false;
+  if (error) return status('Login failed: ' + error.message);
+  setUser(data.user);
+  status('Login successful. Supabase email authentication is working.');
+});
+$('signupBtn').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const password = $('password').value;
+  if (!email || !password) return status('Please enter an email and password.');
+  if (password.length < 8) return status('Use a password with at least 8 characters.');
+  $('signupBtn').disabled = true;
+  status('Creating account…');
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  $('signupBtn').disabled = false;
+  if (error) return status('Account creation failed: ' + error.message);
+  if (data.session) {
+    setUser(data.user);
+    status('Account created and logged in successfully.');
+  } else {
+    status('Account request sent. Check your email for a confirmation link, then return here and log in. If you are testing the manually created Supabase user, use Log in instead.');
+  }
+});
+$('resetBtn').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  if (!email) return status('Enter your email address first.');
+  status('Sending password-reset email…');
+  const redirectTo = window.location.href.split('#')[0].split('?')[0];
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return status('Password reset failed: ' + error.message);
+  status('If this email belongs to an account, a password-reset email has been sent.');
+});
+$('logoutBtn').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) return status('Log out failed: ' + error.message);
+  setUser(null);
+  status('Logged out.');
+});
+supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user || null));
+refreshSession();
+</script>
+</body>
+</html>
