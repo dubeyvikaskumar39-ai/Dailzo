@@ -6,6 +6,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.svg">
 <title>Dailzo — Grocery Delivery</title>
+<meta name="description" content="Shop daily essentials on Dailzo with a persistent cart and updated price and stock checks at checkout.">
 <style>
 :root{--yellow:#f8d82e;--green:#176b36;--ink:#202020;--muted:#6b7280;--line:#ececec;--bg:#f7f7f5}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{cursor:pointer}
@@ -187,16 +188,25 @@ nav{background:rgba(255,255,255,.92);backdrop-filter:blur(18px);box-shadow:0 12p
 @media(min-width:600px){#products{gap:13px}.product{padding:12px}.product .stock-chip{font-size:10px}}
 
 
-/* Dailzo modern in-app dialog: replaces dated browser alert popups */
-.dz-dialog-backdrop{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(8,30,20,.48);backdrop-filter:blur(7px)}
-.dz-dialog-backdrop.open{display:flex;animation:dzFade .16s ease-out}.dz-dialog{width:100%;max-width:370px;background:linear-gradient(160deg,#fff,#f2fbf5);border:1px solid #e1f0e5;border-radius:27px;padding:25px 22px 20px;box-shadow:0 24px 80px #071c1240;animation:dzPop .2s ease-out;text-align:center}
-.dz-dialog-icon{width:58px;height:58px;margin:0 auto 14px;border-radius:20px;display:grid;place-items:center;background:#dcfce7;color:#087b43;font-size:28px}.dz-dialog h3{font-size:21px;margin:0 0 8px;letter-spacing:-.5px;color:#102b27}.dz-dialog p{font-size:14px;line-height:1.55;color:#62736a;margin:0 0 20px;white-space:pre-line;overflow-wrap:anywhere}.dz-dialog button{width:100%;border:0;border-radius:15px;padding:14px;background:linear-gradient(100deg,#087b43,#0aa65a);color:white;font-weight:800;box-shadow:0 8px 18px #078a4b25}.dz-order-number{font-size:22px;font-weight:900;letter-spacing:1px;color:#087b43;background:#e7f8ed;border:1px dashed #9bd8b1;border-radius:13px;padding:12px;margin:-5px 0 17px;user-select:all}
-@keyframes dzFade{from{opacity:0}to{opacity:1}}@keyframes dzPop{from{transform:translateY(10px) scale(.97);opacity:.5}to{transform:translateY(0) scale(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.dz-dialog-backdrop.open,.dz-dialog{animation:none}}
-</style></head>
+/* Blinkit-style compact area-only location */
+.delivery-address{display:flex!important;align-items:center;gap:9px;margin:12px 1px 5px;padding:10px 12px;background:#fff;border:1px solid #e6eee8;border-radius:15px;box-shadow:0 4px 14px #153c2008;cursor:pointer;min-width:0}
+.delivery-address .pin{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:11px;background:#e2f7e9;color:#07894b;font-size:21px}
+.delivery-address span:nth-child(2){display:flex;flex-direction:column;gap:2px;min-width:0}
+.delivery-address small{font-size:9px;letter-spacing:1px;color:#72847a;font-weight:800}
+.delivery-address b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:min(68vw,420px)}
+.delivery-address .chevron{margin-left:auto;font-size:20px;color:#71827a;flex:0 0 auto}
+.search-wrap{margin-top:10px}
+</style>
+<style id="dailzo-all-updates">
+.order-card{background:#fff;border:1px solid #e4eee7;border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 6px 18px #123b2408}.order-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.order-card-head strong{font-size:14px}.order-items-line{font-size:12px;color:#5c6f64;margin:12px 0;line-height:1.5}.trackline{display:flex;align-items:flex-start;justify-content:space-between;gap:3px;margin:17px 0 12px;position:relative}.trackline:before{content:"";position:absolute;left:7%;right:7%;top:11px;height:3px;background:#e6ece8}.track-step{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;text-align:center;color:#8a9790}.track-step span{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;background:#e9efeb;border:2px solid white;font-size:10px;font-weight:900}.track-step.done{color:#087b43}.track-step.done span{background:#078a4b;color:#fff}.track-step small{font-size:9px;line-height:1.2}.order-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #edf2ee;padding-top:10px}.order-status-label{font-size:11px;font-weight:800;color:#087b43;background:#eaf8ef;border-radius:20px;padding:6px 10px}.repeat-order{white-space:nowrap;font-size:11px}.delivery-address{cursor:pointer}.delivery-address:focus-visible,.add:focus-visible,button:focus-visible{outline:3px solid #8fd6ac;outline-offset:2px}
+@media(max-width:380px){.track-step small{font-size:8px}.order-card{padding:12px}.order-card-foot{align-items:flex-start;flex-direction:column}}
+</style>
+
+</head>
 <body>
 <header>
  <div class="topline"><div class="brand"><div class="logo">D</div><div class="brandcopy"><strong>DAILZO</strong><small>Everyday essentials, made easy</small></div></div><button class="account-trigger" id="accountTrigger" aria-label="Open account" onclick="accountTap()"><svg class="avatar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.7-4 3.4-6 7.5-6s6.8 2 7.5 6"/></svg></button></div>
+ <button class="delivery-address" id="topDeliveryLocation" type="button" onclick="openLocationCheckout()" aria-label="Change delivery location"><span class="pin" aria-hidden="true">⌖</span><span><small>DELIVERING TO</small><b id="topAreaName">Select your area</b></span><span class="chevron" aria-hidden="true">⌄</span></button>
  <div class="search-wrap"><span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><input id="search" class="search" placeholder="Search fruits, milk, snacks..." oninput="renderProducts()"><button class="search-action" type="button" aria-label="Search products" onclick="document.getElementById('search').focus()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></button></div>
 </header>
 <main>
@@ -215,8 +225,6 @@ nav{background:rgba(255,255,255,.92);backdrop-filter:blur(18px);box-shadow:0 12p
 </main>
 <button id="cartbar" class="cartbar" onclick="go('cart')"><span id="cartbarText">View cart</span><span id="cartbarTotal">₹0 →</span></button>
 
-
-<div class="dz-dialog-backdrop" id="dzDialogBackdrop" role="dialog" aria-modal="true" aria-labelledby="dzDialogTitle" onclick="if(event.target===this)closeDailzoDialog()"><div class="dz-dialog"><div class="dz-dialog-icon" id="dzDialogIcon">✓</div><h3 id="dzDialogTitle">Dailzo</h3><p id="dzDialogMessage"></p><div class="dz-order-number" id="dzDialogOrder" style="display:none"></div><button type="button" onclick="closeDailzoDialog()">Okay, got it</button></div></div>
 
 <div class="checkout-modal" id="checkoutModal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle" onclick="if(event.target===this)closeCheckoutModal()">
  <div class="checkout-panel">
@@ -255,7 +263,7 @@ nav{background:rgba(255,255,255,.92);backdrop-filter:blur(18px);box-shadow:0 12p
   <div class="account-shortcuts">
    <button class="account-shortcut" onclick="go('orders');closeAccount()"><span class="round">▤</span>Orders</button>
    <button class="account-shortcut" onclick="accountFeature('Wallet','Your Dailzo wallet balance will appear here when wallet payments are enabled.')"><span class="round">▣</span><span id="walletBalance">₹0.00</span></button>
-   <button class="account-shortcut" onclick="accountFeature('Address','Add or manage your delivery addresses here.')"><span class="round">▣</span>Address</button>
+   <button class="account-shortcut" onclick="closeAccount();if(totalCount()===0){const first=products.find(p=>true);if(first)changeQty(first.id,1);}checkout()"><span class="round">▣</span>Address</button>
   </div>
   <div class="account-menu">
    <button onclick="accountFeature('My Wishlist','Your saved favourite products will appear here.')"><span class="menu-icon">♡</span><span>My Wishlist</span><span class="menu-arrow">›</span></button>
@@ -438,11 +446,30 @@ window.dailzoLoadProducts = async () => {
       const credential = await firebaseAuth.signInAnonymously(auth);
       return credential.user;
     };
+    // Client-side freshness check only. Production must route checkout through a trusted Cloud Function
+    // that recalculates prices, verifies stock and atomically reserves/decrements stock before creating Orders.
+    window.validateDailzoCartWithFirestore = async (items) => {
+      const checks = [];
+      for (const item of items) {
+        const productRef = firestore.doc(db, "Product", String(item.productId));
+        const snap = await firestore.getDoc(productRef);
+        if (!snap.exists()) throw new Error(`${item.name || "A product"} is no longer available. Remove it from cart.`);
+        const data = snap.data();
+        const rawPrice = data.Price ?? data.price ?? data.sale_price ?? data.selling_price;
+        const price = Number(rawPrice);
+        if (!Number.isFinite(price) || price < 0) throw new Error(`Price is missing for ${item.name || "a product"}. Please contact the store.`);
+        const rawStock = data.Stock ?? data.stock ?? data.Quantity ?? data.quantity;
+        const stockKnown = rawStock !== undefined && rawStock !== null && rawStock !== "" && Number.isFinite(Number(rawStock));
+        const stock = stockKnown ? Number(rawStock) : null;
+        if (stockKnown && stock < Number(item.qty)) throw new Error(`${data.Name || data.name || item.name}: only ${Math.max(0, stock)} available. Please update your cart.`);
+        if (Math.abs(price - Number(item.price)) > 0.001) throw new Error(`${data.Name || data.name || item.name} price changed from ${money(item.price)} to ${money(price)}. Cart updated; please review and place the order again.`);
+        checks.push({ ...item, name:String(data.Name ?? data.name ?? data.Product_name ?? data.product_name ?? item.name), price, qty:Number(item.qty) });
+      }
+      return checks;
+    };
     window.createDailzoOrder = async (order) => {
       const user = await window.dailzoEnsureFirebaseCustomer();
-      const orderNumber = String(order.orderNumber || 'DZ'+Date.now().toString().slice(-8));
       const ref = await firestore.addDoc(firestore.collection(db, "Orders"), {
-        orderNumber,
         name: String(order.name || "").trim(),
         phone: String(order.phone || "").trim(),
         address: String(order.address || "").trim(),
@@ -457,7 +484,7 @@ window.dailzoLoadProducts = async () => {
         createdAt: firestore.serverTimestamp(),
         date: new Date().toLocaleString()
       });
-      return { id: ref.id, orderNumber, customerUid: user.uid };
+      return { id: ref.id, customerUid: user.uid };
     };
     window.loadDailzoOrders = async () => {
       const user = await window.dailzoEnsureFirebaseCustomer();
@@ -467,7 +494,7 @@ window.dailzoLoadProducts = async () => {
     };
 
     const snapshot = await firestore.getDocs(firestore.collection(db, "Product"));
-    const rows = snapshot.docs.map((productDoc, index) => ({ ...productDoc.data(), id: index + 1, firestoreId: productDoc.id }));
+    const rows = snapshot.docs.map((productDoc) => ({ ...productDoc.data(), id: productDoc.id, firestoreId: productDoc.id }));
     window.dispatchEvent(new CustomEvent("dailzo-products-loaded", { detail: rows }));
   } catch (error) {
     window.dispatchEvent(new CustomEvent("dailzo-products-error", { detail: error?.message || "Could not load products from Firebase." }));
@@ -489,20 +516,24 @@ const defaults=[
  {id:7,name:'Bath Soap',sub:'Pack of 2',price:58,emoji:'🧼',cat:'Personal Care'},
  {id:8,name:'Dishwash Liquid',sub:'500 ml',price:89,emoji:'🧴',cat:'Home Care'}
 ];
-let products=[];
-// Firebase is the source of truth for products. Never show demo products as purchasable items.
+let products=defaults.slice();
+// Firebase is the source of truth for products; products are not loaded from demo data when the database is empty.
 window.addEventListener('dailzo-products-loaded', event => {
  const rows=event.detail || [];
  if (!rows.length) { products=[]; renderCategories(); renderProducts(); return; }
- products=rows.map((r,i)=>{const rawStock=r.Stock ?? r.stock ?? r.Quantity ?? r.quantity;return {id:String(r.id ?? (i+1)),name:String(r.Name ?? r.name ?? r.Product_name ?? r.product_name ?? r.title ?? 'Unnamed product'),price:Number(r.Price ?? r.price ?? r.sale_price ?? r.selling_price ?? 0),cat:String(r.Category ?? r.category ?? r.cat ?? 'Other'),stock:rawStock===undefined||rawStock===null||rawStock===''?null:Number(rawStock),image:String(r.Image ?? r.image ?? r.Image_URL ?? r.image_url ?? ''),sub:String(r.Sub ?? r.sub ?? r.Unit ?? r.unit ?? ''),emoji:'🛍️'};}).filter(p=>p.name && Number.isFinite(p.price) && p.price>=0);
- renderCategories(); renderProducts(); renderCart();
+ products=rows.map((r,i)=>{const rawStock=r.Stock ?? r.stock ?? r.Quantity ?? r.quantity;return {id:String(r.firestoreId ?? r.id ?? (i+1)),firestoreId:String(r.firestoreId ?? r.id ?? (i+1)),name:String(r.Name ?? r.name ?? r.Product_name ?? r.product_name ?? r.title ?? 'Unnamed product'),price:Number(r.Price ?? r.price ?? r.sale_price ?? r.selling_price ?? 0),cat:String(r.Category ?? r.category ?? r.cat ?? 'Other'),stock:rawStock===undefined||rawStock===null||rawStock===''?null:Number(rawStock),image:String(r.Image ?? r.image ?? r.Image_URL ?? r.image_url ?? ''),sub:String(r.Sub ?? r.sub ?? r.Unit ?? r.unit ?? ''),emoji:'🛍️'};}).filter(p=>p.name && Number.isFinite(p.price) && p.price>=0);
+ normalizeCart(); renderCategories(); renderProducts(); renderCart();
 });
 window.addEventListener('dailzo-products-error', event => {
  const box=document.getElementById('products'); if(box) box.innerHTML='<div class="empty">Could not load products from database: '+String(event.detail).replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))+'</div>';
 });
-let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
+let cart=JSON.parse(localStorage.getItem('dailzoCart')||'{}');let activeCat='All';
+// Persistent cart stores product document IDs; quantities are revalidated against Firestore before checkout.
+function normalizeCart(){const valid={};for(const [id,q] of Object.entries(cart||{})){const qty=Math.floor(Number(q));if(qty>0&&Number.isFinite(qty)&&products.some(p=>String(p.id)===String(id)))valid[String(id)]=qty;}cart=valid;localStorage.setItem('dailzoCart',JSON.stringify(cart));}
+let orders=JSON.parse(localStorage.getItem('dailzoOrders')||'[]');
 const money=n=>'₹'+Number(n).toLocaleString('en-IN');
-function save(){localStorage.setItem('dailzoProducts',JSON.stringify(products));localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
+function save(){localStorage.setItem('dailzoCart',JSON.stringify(cart));localStorage.setItem('dailzoOrders',JSON.stringify(orders));}
+window.addEventListener('storage',e=>{if(e.key==='dailzoCart'){try{cart=JSON.parse(e.newValue||'{}');normalizeCart();renderProducts();renderCart();}catch(_){}}});
 function renderCategories(){const box=document.getElementById('categoryList');if(!box)return;const icons={'Dairy':'🥛','Snacks':'🍪','Grocery':'🌾','Drinks':'🧃','Personal Care':'🧴','Home Care':'🧹','Fruits':'🍎','Vegetables':'🥬'};box.replaceChildren();const add=(label,icon,value)=>{const b=document.createElement('button');b.className='cat';b.type='button';b.setAttribute('aria-pressed',String(activeCat===value));const e=document.createElement('span');e.className='emoji';e.textContent=icon;b.append(e,document.createTextNode(label));b.addEventListener('click',()=>setCat(value));box.appendChild(b);};add('All items','🛒','All');[...new Set(products.map(p=>String(p.cat||'Other').trim()).filter(Boolean))].forEach(c=>add(c,icons[c]||'🛍️',c));}
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function showToast(message){const el=document.getElementById('dailzoToast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(window.dailzoToastTimer);window.dailzoToastTimer=setTimeout(()=>el.classList.remove('show'),2300);}
@@ -512,49 +543,28 @@ function changeQty(id,d){const p=products.find(x=>String(x.id)===String(id));if(
 function totalCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
 function totalPrice(){return products.reduce((s,p)=>s+p.price*(cart[p.id]||0),0)}
 function updateCartBar(){let n=totalCount();let b=document.getElementById('cartbar');b.style.display=n?'flex':'none';document.getElementById('cartbarText').textContent=n+' item'+(n===1?'':'s')+' in cart';document.getElementById('cartbarTotal').textContent=money(totalPrice())+' →';}
-function renderCart(){let entries=products.filter(p=>cart[p.id]);document.getElementById('cartItems').innerHTML=entries.length?entries.map(p=>`<div class="cartitem"><div class="emoji">${p.emoji}</div><div class="detail"><b>${p.name}</b><br>${money(p.price)} each</div><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button>${cart[p.id]}<button onclick="changeQty(${p.id},1)">+</button></div></div>`).join(''):'<div class="empty">🛍️<br>Your cart is empty.<br>Add a few everyday essentials first.</div>';document.getElementById('cartTotals').innerHTML=entries.length?`<div class="total">Item total <b style="float:right">${money(totalPrice())}</b><br>Delivery fee <b style="float:right">Calculated at launch</b><hr><strong>Subtotal <b style="float:right">${money(totalPrice())}</b></strong></div>`:'';updateCartBar();}
+function renderCart(){let entries=products.filter(p=>cart[p.id]);document.getElementById('cartItems').innerHTML=entries.length?entries.map(p=>`<div class="cartitem"><div class="emoji">${p.emoji}</div><div class="detail"><b>${p.name}</b><br>${money(p.price)} each</div><div class="qty"><button onclick="changeQty('${escapeHTML(p.id)}',-1)">−</button>${cart[p.id]}<button onclick="changeQty('${escapeHTML(p.id)}',1)">+</button></div></div>`).join(''):'<div class="empty">🛍️<br>Your cart is empty.<br>Add a few everyday essentials first.</div>';document.getElementById('cartTotals').innerHTML=entries.length?`<div class="total">Item total <b style="float:right">${money(totalPrice())}</b><br><small style="color:#68756d">Price and stock are checked again before order placement.</small><br>Delivery fee <b style="float:right">Calculated at launch</b><hr><strong>Subtotal <b style="float:right">${money(totalPrice())}</b></strong></div>`:'';updateCartBar();}
 function go(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(s).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('selected'));document.getElementById('nav-'+s).classList.add('selected');document.getElementById('cartbar').style.display=(s==='home'&&totalCount())?'flex':'none';if(s==='cart')renderCart();if(s==='orders')renderOrders();window.scrollTo(0,0);}
 function dailzoDistanceKm(aLat,aLng,bLat,bLng){const rad=x=>x*Math.PI/180;const dLat=rad(bLat-aLat),dLng=rad(bLng-aLng);const a=Math.sin(dLat/2)**2+Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function checkDailzoAvailability(lat,lng){const status=document.getElementById('availabilityStatus');const store=window.dailzoStoreSettings;if(!store||!store.configured){window.dailzoAvailability={checked:false,available:false};if(status)status.textContent='Store location abhi admin panel mein set nahi hui. Store owner ko Admin → Settings mein location save karni hogi.';return false;}const distance=dailzoDistanceKm(lat,lng,store.latitude,store.longitude);const radius=Number(store.radiusKm)||3;const available=distance<=radius;window.dailzoAvailability={checked:true,available,distanceKm:Number(distance.toFixed(2)),radiusKm:radius};if(status){status.textContent=available?`✅ Delivery available! Aap store se ${distance.toFixed(2)} km door hain (limit ${radius} km).`:`❌ Abhi delivery available nahi hai. Aap store se ${distance.toFixed(2)} km door hain; limit ${radius} km hai.`;status.style.color=available?'#087b43':'#b4232b';}return available;}
 window.addEventListener('dailzo-store-settings-loaded',()=>{const latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;if(latRaw!==''&&lngRaw!==''){const lat=Number(latRaw),lng=Number(lngRaw);if(Number.isFinite(lat)&&Number.isFinite(lng))checkDailzoAvailability(lat,lng);}});
-
-function showDailzoDialog(title,message,icon='✓',orderNumber=''){const back=document.getElementById('dzDialogBackdrop');document.getElementById('dzDialogTitle').textContent=title;document.getElementById('dzDialogMessage').textContent=message;document.getElementById('dzDialogIcon').textContent=icon;const orderEl=document.getElementById('dzDialogOrder');orderEl.textContent=orderNumber;orderEl.style.display=orderNumber?'block':'none';back.classList.add('open');document.body.style.overflow='hidden';}
-function closeDailzoDialog(){const back=document.getElementById('dzDialogBackdrop');if(back)back.classList.remove('open');if(!document.getElementById('checkoutModal')?.classList.contains('open'))document.body.style.overflow='';}
-window.alert=(message)=>showDailzoDialog('Dailzo',String(message),'ℹ');
-function latitudeSafe(value){return value!==''&&Number.isFinite(Number(value));}
-function makeDailzoOrderNumber(){const d=new Date();const date=[String(d.getFullYear()).slice(-2),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');return 'DZ'+date+'-'+String(Math.floor(100000+Math.random()*900000));}
-function customerStorageKey(key){const uid=window.dailzoSessionUser?.uid||'guest';return 'dailzoCustomer_'+uid+'_'+key;}
-function readCustomerValue(key,fallbackKey){return localStorage.getItem(customerStorageKey(key))||localStorage.getItem(fallbackKey)||'';}
-
 function checkout(){
  if(!window.dailzoSessionUser){window.openAuth();document.getElementById('authMessage').textContent='Please log in before checkout. You can browse products without logging in.';return;}
  if(!totalCount()){alert('Your cart is empty.');return;}
  const modal=document.getElementById('checkoutModal');
- document.getElementById('checkoutName').value=readCustomerValue('name','dailzoProfileName');
- document.getElementById('checkoutPhone').value=readCustomerValue('phone','dailzoProfilePhone');
- document.getElementById('checkoutAddress').value=readCustomerValue('address','dailzoDeliveryAddress');
- document.getElementById('checkoutLandmark').value=readCustomerValue('landmark','dailzoDeliveryLandmark');
- document.getElementById('checkoutLatitude').value=readCustomerValue('latitude','dailzoDeliveryLatitude');
- document.getElementById('checkoutLongitude').value=readCustomerValue('longitude','dailzoDeliveryLongitude');
- const latText=document.getElementById('checkoutLatitude').value,lngText=document.getElementById('checkoutLongitude').value;
- const savedLat=Number(latText),savedLng=Number(lngText),hasSavedGPS=latText!==''&&lngText!==''&&Number.isFinite(savedLat)&&Number.isFinite(savedLng);
- const verifiedAddress=readCustomerValue('verifiedAddress','dailzoVerifiedDeliveryAddress');
- const verifiedLandmark=readCustomerValue('verifiedLandmark','dailzoVerifiedDeliveryLandmark');
- window.dailzoAddressBaseline={address:verifiedAddress,landmark:verifiedLandmark};
- window.dailzoAddressNeedsGps=!hasSavedGPS || !verifiedAddress;
- const gpsBtn=document.getElementById('useGpsBtn');if(gpsBtn)gpsBtn.textContent=hasSavedGPS?'📍 Update GPS location':'📍 Save address with GPS';
- if(hasSavedGPS){
-   checkDailzoAvailability(savedLat,savedLng);
-   document.getElementById('gpsStatus').textContent='Aapka address aur GPS location saved hai. Jab tak address edit nahi karte, dobara GPS check karne ki zaroorat nahi hai.';
-   document.getElementById('deliveryMapFrame').src=`https://maps.google.com/maps?q=${savedLat},${savedLng}&z=16&output=embed`;
-   document.getElementById('deliveryMapLink').href=`https://www.google.com/maps?q=${savedLat},${savedLng}`;
-   document.getElementById('deliveryMapPreview').style.display='block';
- }else{
-   window.dailzoAvailability={checked:false,available:false};
-   document.getElementById('availabilityStatus').textContent=window.dailzoStoreSettings?.configured?'Pehli baar address save karne ke liye GPS location verify karein.':'Store location admin panel mein set hone ka intezar hai.';
-   document.getElementById('gpsStatus').textContent='Pehli baar address save karte waqt GPS check karein. Baad ke orders mein zaroorat nahi hogi.';
-   document.getElementById('deliveryMapPreview').style.display='none';document.getElementById('deliveryMapFrame').src='about:blank';
- }
+ document.getElementById('checkoutName').value=localStorage.getItem('dailzoProfileName')||'';
+ document.getElementById('checkoutPhone').value=localStorage.getItem('dailzoProfilePhone')||'';
+ const saved=JSON.parse(localStorage.getItem('dailzoSavedAddress')||'null');
+ document.getElementById('checkoutAddress').value=saved?.address||localStorage.getItem('dailzoDeliveryAddress')||'';
+ document.getElementById('checkoutLandmark').value=saved?.landmark||'';
+ document.getElementById('checkoutLatitude').value=saved?.latitude!=null?String(saved.latitude):'';
+ document.getElementById('checkoutLongitude').value=saved?.longitude!=null?String(saved.longitude):'';
+ window.dailzoAvailability={checked:false,available:false};
+ document.getElementById('availabilityStatus').textContent=window.dailzoStoreSettings?.configured?(saved?.latitude!=null?'Checking saved delivery location…':'GPS location se 3 km delivery area check karein.'):'Store location admin panel mein set hone ka intezar hai.';
+ document.getElementById('availabilityStatus').style.color='';
+ document.getElementById('gpsStatus').textContent=saved?.latitude!=null?'✅ Saved address loaded. Address edit karne par GPS dobara verify hoga.':'Pehli baar address bhar kar GPS location verify karein.';
+ if(saved?.latitude!=null&&saved?.longitude!=null){const ok=checkDailzoAvailability(Number(saved.latitude),Number(saved.longitude));document.getElementById('gpsStatus').textContent=ok?'✅ Saved address loaded — dobara GPS check karne ki zaroorat nahi.':'Saved location delivery radius se bahar hai.';document.getElementById('deliveryMapLink').href=`https://www.google.com/maps?q=${saved.latitude},${saved.longitude}`;document.getElementById('deliveryMapPreview').style.display='none';}
+ else {document.getElementById('deliveryMapPreview').style.display='none';document.getElementById('deliveryMapFrame').src='about:blank';}
  const items=products.filter(p=>cart[p.id]);document.getElementById('checkoutSummary').innerHTML=items.map(p=>`<div class="checkout-summary-line"><span>${cart[p.id]} × ${p.name}</span><b>${money(p.price*cart[p.id])}</b></div>`).join('')+`<div class="checkout-summary-line"><span>Delivery fee</span><span>Calculated later</span></div><div class="checkout-summary-line total-line"><span>Subtotal</span><strong>${money(totalPrice())}</strong></div>`;
  document.getElementById('checkoutTotalLabel').textContent=money(totalPrice());modal.classList.add('open');document.body.style.overflow='hidden';setTimeout(()=>document.getElementById('checkoutName').focus(),80);
 }
@@ -565,11 +575,11 @@ function useCurrentLocation(){
  status.textContent='GPS location mil rahi hai…';if(btn)btn.disabled=true;
  navigator.geolocation.getCurrentPosition(position=>{
   const lat=Number(position.coords.latitude.toFixed(6)),lng=Number(position.coords.longitude.toFixed(6));
-  document.getElementById('checkoutLatitude').value=String(lat);document.getElementById('checkoutLongitude').value=String(lng);localStorage.setItem(customerStorageKey('latitude'),String(lat));localStorage.setItem(customerStorageKey('longitude'),String(lng));localStorage.setItem('dailzoDeliveryLatitude',String(lat));localStorage.setItem('dailzoDeliveryLongitude',String(lng));
+  document.getElementById('checkoutLatitude').value=String(lat);document.getElementById('checkoutLongitude').value=String(lng);
   const mapsUrl=`https://www.google.com/maps?q=${lat},${lng}`;
   document.getElementById('deliveryMapFrame').src=`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
   document.getElementById('deliveryMapLink').href=mapsUrl;document.getElementById('deliveryMapPreview').style.display='block';
-  const inRange=checkDailzoAvailability(lat,lng);const verifiedAddress=document.getElementById('checkoutAddress').value.trim(),verifiedLandmark=document.getElementById('checkoutLandmark').value.trim();window.dailzoAddressNeedsGps=false;window.dailzoAddressBaseline={address:verifiedAddress,landmark:verifiedLandmark};localStorage.setItem(customerStorageKey('verifiedAddress'),verifiedAddress);localStorage.setItem(customerStorageKey('verifiedLandmark'),verifiedLandmark);localStorage.setItem('dailzoVerifiedDeliveryAddress',verifiedAddress);localStorage.setItem('dailzoVerifiedDeliveryLandmark',verifiedLandmark);status.textContent=`GPS location save ho gayi. ${inRange?'Aapke area mein delivery available hai.':'Delivery availability status upar dekhein.'} Address ko edit karenge to GPS dobara verify karna hoga.`;if(btn){btn.disabled=false;btn.textContent='📍 Update GPS location';}
+  const inRange=checkDailzoAvailability(lat,lng);status.textContent=`Location pinned: ${lat}, ${lng}. ${inRange?'Aapke area mein delivery available hai.':'Delivery availability status upar dekhein.'} Delivery address bhi zaroor bharein.`;if(btn)btn.disabled=false;
  },error=>{const msg=error.code===1?'Location permission deny hui. Browser site settings mein location allow karein.':error.code===2?'GPS location nahi mili. GPS on karke dobara try karein.':'GPS request timeout hui. Dobara try karein.';status.textContent=msg;if(btn)btn.disabled=false;},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
 }
 function closeCheckoutModal(){document.getElementById('checkoutModal').classList.remove('open');document.body.style.overflow='';}
@@ -579,41 +589,68 @@ async function submitCheckout(event){
  if(!totalCount()){closeCheckoutModal();alert('Your cart is empty.');return;}
  const name=document.getElementById('checkoutName').value.trim(),phone=document.getElementById('checkoutPhone').value.trim(),address=document.getElementById('checkoutAddress').value.trim(),landmark=document.getElementById('checkoutLandmark').value.trim();
  if(!name||!phone||!address)return;
- const normalizedPhone=phone.replace(/\D/g,'').slice(-10);if(!/^[6-9]\d{9}$/.test(normalizedPhone)){alert('Sahi 10-digit Indian mobile number daalein.');return;}
  const button=document.querySelector('#checkoutForm .checkout-submit');
  if(button){button.disabled=true;button.textContent='Placing order…';}
- const latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;const latitude=latRaw!==''?Number(latRaw):null,longitude=lngRaw!==''?Number(lngRaw):null;
- const baseline=window.dailzoAddressBaseline||{address:'',landmark:''};const addressChanged=address!==baseline.address||landmark!==baseline.landmark;const needsGps=latitude===null||longitude===null||addressChanged||window.dailzoAddressNeedsGps===true;if(needsGps){if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}alert(addressChanged?'Aapne delivery address edit kiya hai. Naye address ko save karne ke liye ek baar “Update GPS location” dabayein.':'Pehli baar address save karne ke liye “Save address with GPS” dabayein.');return;}
- if(!checkDailzoAvailability(latitude,longitude)){if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}alert('Sorry, abhi aapke area mein Dailzo delivery available nahi hai. Delivery limit store se 3 km hai.');return;}
- localStorage.setItem('dailzoProfileName',name);localStorage.setItem('dailzoProfilePhone',normalizedPhone);localStorage.setItem('dailzoDeliveryAddress',address);localStorage.setItem('dailzoDeliveryLandmark',landmark);localStorage.setItem(customerStorageKey('name'),name);localStorage.setItem(customerStorageKey('phone'),normalizedPhone);localStorage.setItem(customerStorageKey('address'),address);localStorage.setItem(customerStorageKey('landmark'),landmark);localStorage.setItem(customerStorageKey('latitude'),String(latitude));localStorage.setItem(customerStorageKey('longitude'),String(longitude));localStorage.setItem('dailzoDeliveryLatitude',String(latitude));localStorage.setItem('dailzoDeliveryLongitude',String(longitude));
+ localStorage.setItem('dailzoProfileName',name);localStorage.setItem('dailzoProfilePhone',phone);localStorage.setItem('dailzoDeliveryAddress',address);
  const fullAddress=landmark?address+' (Landmark: '+landmark+')':address;
- const orderData={name,phone:normalizedPhone,address:fullAddress,latitude,longitude,locationSource:'gps',distanceFromStoreKm:window.dailzoAvailability.distanceKm,storeRadiusKm:window.dailzoAvailability.radiusKm,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({productId:String(p.id),name:p.name,price:Number(p.price),qty:Number(cart[p.id])}))};
+ const latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;const latitude=latRaw!==''?Number(latRaw):null,longitude=lngRaw!==''?Number(lngRaw):null;
+ if(latitude===null||longitude===null){if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}alert('Delivery area check karne ke liye pehle “Check delivery with GPS” dabayein.');return;}
+ if(!checkDailzoAvailability(latitude,longitude)){if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}alert('Sorry, abhi aapke area mein Dailzo delivery available nahi hai. Delivery limit store se 3 km hai.');return;}
+ const orderData={name,phone,address:fullAddress,latitude,longitude,locationSource:'gps',distanceFromStoreKm:window.dailzoAvailability.distanceKm,storeRadiusKm:window.dailzoAvailability.radiusKm,total:totalPrice(),items:products.filter(p=>cart[p.id]).map(p=>({productId:String(p.id),name:p.name,price:Number(p.price),qty:Number(cart[p.id])}))};
  try{
   if(typeof window.createDailzoOrder!=='function')throw new Error('Firebase order service is still loading. Wait a few seconds and try again.');
-  const orderNumber=makeDailzoOrderNumber();const saved=await window.createDailzoOrder({...orderData,orderNumber});
-  orders.unshift({...orderData,id:saved.id,orderNumber:saved.orderNumber||orderNumber,status:'Pending',date:new Date().toLocaleString()});window.dailzoAddressBaseline={address,landmark};window.dailzoAddressNeedsGps=false;cart={};save();closeCheckoutModal();
+  if(typeof window.validateDailzoCartWithFirestore!=='function')throw new Error('Price/stock verification service is not ready. Please retry.');
+  orderData.items=await window.validateDailzoCartWithFirestore(orderData.items);
+  orderData.total=orderData.items.reduce((sum,item)=>sum+Number(item.price)*Number(item.qty),0);
+  const saved=await window.createDailzoOrder(orderData);
+  localStorage.setItem('dailzoSavedAddress',JSON.stringify({address,landmark,latitude,longitude,verifiedAt:new Date().toISOString()}));refreshTopAreaName();
+  localStorage.setItem('dailzoDeliveryAddress',address);
+  orders.unshift({...orderData,id:saved.id,status:'Pending',date:new Date().toLocaleString()});cart={};save();closeCheckoutModal();
   if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">₹0</span> →';}
-  renderCart();renderProducts();renderOrders();showDailzoDialog('Order placed successfully!','Aapka order Dailzo ko mil gaya hai. Is number ko note kar lein.','✓',saved.orderNumber||orderNumber);go('orders');
+  renderCart();renderProducts();renderOrders();alert('Order placed successfully! Order ID: '+saved.id);go('orders');
  }catch(error){
   console.error('Dailzo order save failed:',error);
   alert('Order save nahi hua: '+(error?.message||'Unknown error')+'\nFirebase Authentication me Anonymous provider enabled hai aur Firestore Rules published hain, ye check karein.');
   if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}
  }
 }
+function orderStage(status){const s=String(status||'Pending').toLowerCase();if(s.includes('deliver'))return 4;if(s.includes('out for'))return 3;if(s.includes('prepar')||s.includes('pack'))return 2;if(s.includes('accept')||s.includes('confirm'))return 1;return 0;}
+function repeatOrder(id){const o=orders.find(x=>String(x.id)===String(id));if(!o||!Array.isArray(o.items)){showToast('Order items unavailable.');return;}let added=0;for(const item of o.items){const p=products.find(x=>String(x.id)===String(item.productId)||String(x.name)===String(item.name));if(!p)continue;const stockKnown=p.stock!==null&&p.stock!==undefined&&Number.isFinite(Number(p.stock));const desired=(Number(cart[p.id])||0)+Math.max(1,Number(item.qty)||1);if(stockKnown&&desired>Number(p.stock))continue;cart[p.id]=desired;added++;}save();renderCart();renderProducts();if(added){go('cart');showToast('Available items added to cart. Review price and stock before checkout.');}else showToast('Ordered items are currently unavailable.');}
 async function renderOrders(){
  const box=document.getElementById('orderHistory');if(!box)return;box.innerHTML='<div class="empty">Loading your orders…</div>';
- try{
-  if(typeof window.loadDailzoOrders==='function'&&window.dailzoSessionUser){
-   const cloudOrders=await window.loadDailzoOrders();
-   orders=cloudOrders.map(o=>({...o,date:o.date||o.createdAt?.toDate?.().toLocaleString?.()||'Recently placed'}));save();
-  }
- }catch(error){console.error('Could not load customer orders:',error);box.innerHTML='<div class="empty">Orders abhi load nahi ho paaye. Internet aur Firebase Rules check karke dobara try karein.</div>';return;}
- box.innerHTML=orders.length?orders.map(o=>{const hasGps=o.latitude!==null&&o.longitude!==null&&Number.isFinite(Number(o.latitude))&&Number.isFinite(Number(o.longitude));const mapUrl=hasGps?`https://www.google.com/maps?q=${Number(o.latitude)},${Number(o.longitude)}`:'';return `<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.orderNumber||o.id}</b><br>${(o.items||[]).map(i=>i.qty+' × '+i.name).join(', ')}<br><span class="sub">${o.date||'Recently placed'} · ${o.status||'Pending'}</span></div><b>${money(o.total)}</b></div>`}).join(''):'<div class="empty">Your orders will appear here after you place one.</div>';
+ try{if(typeof window.loadDailzoOrders==='function'&&window.dailzoSessionUser){const cloudOrders=await window.loadDailzoOrders();orders=cloudOrders.map(o=>({...o,date:o.date||o.createdAt?.toDate?.().toLocaleString?.()||'Recently placed'}));save();}}
+ catch(error){console.error('Could not load customer orders:',error);box.innerHTML='<div class="empty">Orders abhi load nahi ho paaye. Internet aur Firebase Rules check karke dobara try karein.</div>';return;}
+ box.innerHTML=orders.length?orders.map(o=>{const stage=orderStage(o.status);const steps=['Placed','Accepted','Packed','Out for delivery','Delivered'];const timeline=steps.map((label,i)=>`<div class="track-step ${i<=stage?'done':''}"><span>${i<stage?'✓':i+1}</span><small>${label}</small></div>`).join('');const items=(o.items||[]).map(i=>`${escapeHTML(i.qty)} × ${escapeHTML(i.name)}`).join(', ');return `<article class="order-card"><div class="order-card-head"><div><strong>Order #${escapeHTML(String(o.id).slice(-7).toUpperCase())}</strong><div class="sub">${escapeHTML(o.date||'Recently placed')}</div></div><b>${money(o.total)}</b></div><div class="order-items-line">${items}</div><div class="trackline" aria-label="Order status">${timeline}</div><div class="order-card-foot"><span class="order-status-label">${escapeHTML(o.status||'Pending')}</span><button class="add repeat-order" onclick="repeatOrder('${escapeHTML(o.id)}')">Order again ↻</button></div></article>`;}).join(''):'<div class="empty">📦<br>Your orders will appear here after you place one.</div>';
 }
-function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.orderNumber||o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
+function renderAdminOrders(){const el=document.getElementById('adminOrders');if(!el)return;el.innerHTML=orders.length?orders.map(o=>`<div class="cartitem"><div class="emoji">📦</div><div class="detail"><b>Order ${o.id}</b><br>${o.name} · ${o.phone}<br>${o.address}<br>${o.items.map(i=>i.qty+' × '+i.name).join(', ')}<br><b>${money(o.total)}</b><br><span class="sub">${o.date} · ${o.status}</span><br><button class="add" onclick="setOrderStatus('${o.id}','Accepted')">Accept</button> <button class="add" onclick="setOrderStatus('${o.id}','Preparing')">Preparing</button> <button class="add" onclick="setOrderStatus('${o.id}','Delivered')">Delivered</button></div></div>`).join(''):'No demo orders yet. Create a test order from the Home screen to see it here.';}
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
 function addProduct(){let name=document.getElementById('newName').value.trim(),price=Number(document.getElementById('newPrice').value),emoji=document.getElementById('newEmoji').value.trim()||'🛒',cat=document.getElementById('newCat').value;if(!name||price<=0){document.getElementById('adminMsg').textContent='Enter a product name and a price greater than zero.';return;}products.unshift({id:Date.now(),name,price,emoji,cat,sub:'Everyday essential'});save();renderProducts();document.getElementById('adminMsg').textContent='Added to this device’s demo catalogue.';document.getElementById('newName').value='';document.getElementById('newPrice').value='';document.getElementById('newEmoji').value='';}
-const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderCategories();renderProducts();renderCart();renderOrders();
+// Blinkit-style area label: show city/area only; keep full address and GPS privately saved for checkout.
+function openLocationCheckout(){if(typeof checkout==='function'){checkout();}else{const el=document.getElementById('topDeliveryLocation');if(el)el.title='Add your delivery address at checkout';}}
+function dailzoAreaFallback(saved){
+ const raw=String(saved?.address||'').split(',').map(x=>x.trim()).filter(Boolean);
+ if(raw.length>=2)return raw.slice(-2).join(', ');
+ if(raw.length===1)return raw[0];
+ return 'Select your area';
+}
+async function refreshTopAreaName(){
+ const label=document.getElementById('topAreaName');if(!label)return;
+ let saved=null;try{saved=JSON.parse(localStorage.getItem('dailzoSavedAddress')||'null');}catch(e){}
+ if(!saved){label.textContent='Select your area';return;}
+ label.textContent=dailzoAreaFallback(saved);
+ if(saved.latitude==null||saved.longitude==null)return;
+ try{
+  const response=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(saved.latitude)}&lon=${encodeURIComponent(saved.longitude)}&zoom=10&addressdetails=1`,{headers:{'Accept':'application/json'}});
+  if(!response.ok)return;const data=await response.json();const a=data.address||{};
+  const area=a.city||a.town||a.village||a.municipality||a.county||a.suburb||a.state_district;
+  const state=a.state;
+  const concise=[area,state].filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).slice(0,2).join(', ');
+  if(concise)label.textContent=concise;
+ }catch(e){/* Keep the saved-address fallback when reverse geocoding is unavailable. */}
+}
+// Editing a saved address invalidates its previously verified GPS coordinates.
+['checkoutAddress','checkoutLandmark'].forEach(id=>{const field=document.getElementById(id);if(field)field.addEventListener('input',()=>{const saved=JSON.parse(localStorage.getItem('dailzoSavedAddress')||'null');if(!saved)return;const changed=document.getElementById('checkoutAddress').value.trim()!==String(saved.address||'')||document.getElementById('checkoutLandmark').value.trim()!==String(saved.landmark||'');if(changed){document.getElementById('checkoutLatitude').value='';document.getElementById('checkoutLongitude').value='';window.dailzoAvailability={checked:false,available:false};document.getElementById('gpsStatus').textContent='Address badla gaya hai. Order se pehle GPS se nayi location verify karein.';}});});
+const savedProfileName=localStorage.getItem('dailzoProfileName');if(savedProfileName)document.getElementById('profileName').textContent=savedProfileName;const savedProfilePhone=localStorage.getItem('dailzoProfilePhone');if(savedProfilePhone)document.getElementById('profilePhone').textContent=savedProfilePhone;renderCategories();renderProducts();renderCart();renderOrders();refreshTopAreaName();
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
 }
