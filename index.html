@@ -548,9 +548,28 @@ function go(s){document.querySelectorAll('.screen').forEach(x=>x.classList.remov
 function dailzoDistanceKm(aLat,aLng,bLat,bLng){const rad=x=>x*Math.PI/180;const dLat=rad(bLat-aLat),dLng=rad(bLng-aLng);const a=Math.sin(dLat/2)**2+Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function checkDailzoAvailability(lat,lng){const status=document.getElementById('availabilityStatus');const store=window.dailzoStoreSettings;if(!store||!store.configured){window.dailzoAvailability={checked:false,available:false};if(status)status.textContent='Store location abhi admin panel mein set nahi hui. Store owner ko Admin → Settings mein location save karni hogi.';return false;}const distance=dailzoDistanceKm(lat,lng,store.latitude,store.longitude);const radius=Number(store.radiusKm)||3;const available=distance<=radius;window.dailzoAvailability={checked:true,available,distanceKm:Number(distance.toFixed(2)),radiusKm:radius};if(status){status.textContent=available?`✅ Delivery available! Aap store se ${distance.toFixed(2)} km door hain (limit ${radius} km).`:`❌ Abhi delivery available nahi hai. Aap store se ${distance.toFixed(2)} km door hain; limit ${radius} km hai.`;status.style.color=available?'#087b43':'#b4232b';}return available;}
 window.addEventListener('dailzo-store-settings-loaded',()=>{const latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;if(latRaw!==''&&lngRaw!==''){const lat=Number(latRaw),lng=Number(lngRaw);if(Number.isFinite(lat)&&Number.isFinite(lng))checkDailzoAvailability(lat,lng);}});
-function checkout(){
+function saveDailzoDeliveryDraft(){
+ try{
+  const address=document.getElementById('checkoutAddress')?.value?.trim()||localStorage.getItem('dailzoDeliveryAddress')||'';
+  const landmark=document.getElementById('checkoutLandmark')?.value?.trim()||'';
+  const latRaw=document.getElementById('checkoutLatitude')?.value||'';
+  const lngRaw=document.getElementById('checkoutLongitude')?.value||'';
+  const previous=JSON.parse(localStorage.getItem('dailzoSavedAddress')||'null')||{};
+  const latitude=latRaw!==''?Number(latRaw):previous.latitude;
+  const longitude=lngRaw!==''?Number(lngRaw):previous.longitude;
+  if(address) localStorage.setItem('dailzoDeliveryAddress',address);
+  if(Number.isFinite(Number(latitude))&&Number.isFinite(Number(longitude))&&latitude!==''&&longitude!==''){
+   localStorage.setItem('dailzoSavedAddress',JSON.stringify({address:address||previous.address||'',landmark,latitude:Number(latitude),longitude:Number(longitude),verifiedAt:previous.verifiedAt||new Date().toISOString()}));
+  }
+ }catch(e){console.warn('Could not save Dailzo delivery draft',e);}
+}
+function bindDailzoAddressAutosave(){
+ ['checkoutAddress','checkoutLandmark'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.dataset.dailzoAutosave){el.dataset.dailzoAutosave='1';el.addEventListener('input',saveDailzoDeliveryDraft);el.addEventListener('change',saveDailzoDeliveryDraft);}});
+}
+function checkout(addressOnly=false){
+ window.dailzoAddressOnly=!!addressOnly;
  if(!window.dailzoSessionUser){window.openAuth();document.getElementById('authMessage').textContent='Please log in before checkout. You can browse products without logging in.';return;}
- if(!totalCount()){alert('Your cart is empty.');return;}
+ if(!totalCount()&&!addressOnly){alert('Your cart is empty.');return;}
  const modal=document.getElementById('checkoutModal');
  document.getElementById('checkoutName').value=localStorage.getItem('dailzoProfileName')||'';
  document.getElementById('checkoutPhone').value=localStorage.getItem('dailzoProfilePhone')||'';
@@ -559,13 +578,14 @@ function checkout(){
  document.getElementById('checkoutLandmark').value=saved?.landmark||'';
  document.getElementById('checkoutLatitude').value=saved?.latitude!=null?String(saved.latitude):'';
  document.getElementById('checkoutLongitude').value=saved?.longitude!=null?String(saved.longitude):'';
+ bindDailzoAddressAutosave();
  window.dailzoAvailability={checked:false,available:false};
  document.getElementById('availabilityStatus').textContent=window.dailzoStoreSettings?.configured?(saved?.latitude!=null?'Checking saved delivery location…':'GPS location se 3 km delivery area check karein.'):'Store location admin panel mein set hone ka intezar hai.';
  document.getElementById('availabilityStatus').style.color='';
  document.getElementById('gpsStatus').textContent=saved?.latitude!=null?'✅ Saved address loaded. Address edit karne par GPS dobara verify hoga.':'Pehli baar address bhar kar GPS location verify karein.';
  if(saved?.latitude!=null&&saved?.longitude!=null){const ok=checkDailzoAvailability(Number(saved.latitude),Number(saved.longitude));document.getElementById('gpsStatus').textContent=ok?'✅ Saved address loaded — dobara GPS check karne ki zaroorat nahi.':'Saved location delivery radius se bahar hai.';document.getElementById('deliveryMapLink').href=`https://www.google.com/maps?q=${saved.latitude},${saved.longitude}`;document.getElementById('deliveryMapPreview').style.display='none';}
  else {document.getElementById('deliveryMapPreview').style.display='none';document.getElementById('deliveryMapFrame').src='about:blank';}
- const items=products.filter(p=>cart[p.id]);document.getElementById('checkoutSummary').innerHTML=items.map(p=>`<div class="checkout-summary-line"><span>${cart[p.id]} × ${p.name}</span><b>${money(p.price*cart[p.id])}</b></div>`).join('')+`<div class="checkout-summary-line"><span>Delivery fee</span><span>Calculated later</span></div><div class="checkout-summary-line total-line"><span>Subtotal</span><strong>${money(totalPrice())}</strong></div>`;
+ const items=products.filter(p=>cart[p.id]);document.getElementById('checkoutSummary').innerHTML=items.length?items.map(p=>`<div class="checkout-summary-line"><span>${cart[p.id]} × ${p.name}</span><b>${money(p.price*cart[p.id])}</b></div>`).join('')+`<div class="checkout-summary-line"><span>Delivery fee</span><span>Calculated later</span></div><div class="checkout-summary-line total-line"><span>Subtotal</span><strong>${money(totalPrice())}</strong></div>`:'<div class="checkout-summary-line">Address book — save or update your delivery address below.</div>';
  document.getElementById('checkoutTotalLabel').textContent=money(totalPrice());modal.classList.add('open');document.body.style.overflow='hidden';setTimeout(()=>document.getElementById('checkoutName').focus(),80);
 }
 function useCurrentLocation(){
@@ -576,6 +596,7 @@ function useCurrentLocation(){
  navigator.geolocation.getCurrentPosition(position=>{
   const lat=Number(position.coords.latitude.toFixed(6)),lng=Number(position.coords.longitude.toFixed(6));
   document.getElementById('checkoutLatitude').value=String(lat);document.getElementById('checkoutLongitude').value=String(lng);
+  saveDailzoDeliveryDraft();
   const mapsUrl=`https://www.google.com/maps?q=${lat},${lng}`;
   document.getElementById('deliveryMapFrame').src=`https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
   document.getElementById('deliveryMapLink').href=mapsUrl;document.getElementById('deliveryMapPreview').style.display='block';
@@ -586,12 +607,22 @@ function closeCheckoutModal(){document.getElementById('checkoutModal').classList
 async function submitCheckout(event){
  event.preventDefault();
  if(!window.dailzoSessionUser){closeCheckoutModal();window.openAuth();return;}
+ if(!totalCount()&&window.dailzoAddressOnly){
+  const n=document.getElementById('checkoutName').value.trim(),p=document.getElementById('checkoutPhone').value.trim(),a=document.getElementById('checkoutAddress').value.trim(),lm=document.getElementById('checkoutLandmark').value.trim(),latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;
+  if(!n||!p||!a){alert('Please enter name, mobile number and delivery address.');return;}
+  const latitude=latRaw!==''?Number(latRaw):null,longitude=lngRaw!==''?Number(lngRaw):null;
+  if(latitude===null||longitude===null){alert('Please verify GPS location before saving this address.');return;}
+  if(!checkDailzoAvailability(latitude,longitude)){alert('Delivery is available only within 3 km of the store.');return;}
+  localStorage.setItem('dailzoProfileName',n);localStorage.setItem('dailzoProfilePhone',p);localStorage.setItem('dailzoDeliveryAddress',a);localStorage.setItem('dailzoSavedAddress',JSON.stringify({address:a,landmark:lm,latitude,longitude,verifiedAt:new Date().toISOString()}));refreshTopAreaName();closeCheckoutModal();alert('Delivery address saved. Next time it will be filled automatically.');return;
+ }
  if(!totalCount()){closeCheckoutModal();alert('Your cart is empty.');return;}
  const name=document.getElementById('checkoutName').value.trim(),phone=document.getElementById('checkoutPhone').value.trim(),address=document.getElementById('checkoutAddress').value.trim(),landmark=document.getElementById('checkoutLandmark').value.trim();
  if(!name||!phone||!address)return;
  const button=document.querySelector('#checkoutForm .checkout-submit');
+ saveDailzoDeliveryDraft();
  if(button){button.disabled=true;button.textContent='Placing order…';}
  localStorage.setItem('dailzoProfileName',name);localStorage.setItem('dailzoProfilePhone',phone);localStorage.setItem('dailzoDeliveryAddress',address);
+ saveDailzoDeliveryDraft();
  const fullAddress=landmark?address+' (Landmark: '+landmark+')':address;
  const latRaw=document.getElementById('checkoutLatitude').value,lngRaw=document.getElementById('checkoutLongitude').value;const latitude=latRaw!==''?Number(latRaw):null,longitude=lngRaw!==''?Number(lngRaw):null;
  if(latitude===null||longitude===null){if(button){button.disabled=false;button.innerHTML='Place order · <span id="checkoutTotalLabel">'+money(totalPrice())+'</span> →';}alert('Delivery area check karne ke liye pehle “Check delivery with GPS” dabayein.');return;}
@@ -626,7 +657,7 @@ function renderAdminOrders(){const el=document.getElementById('adminOrders');if(
 function setOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(!o)return;o.status=status+' (demo)';save();renderOrders();}
 function addProduct(){let name=document.getElementById('newName').value.trim(),price=Number(document.getElementById('newPrice').value),emoji=document.getElementById('newEmoji').value.trim()||'🛒',cat=document.getElementById('newCat').value;if(!name||price<=0){document.getElementById('adminMsg').textContent='Enter a product name and a price greater than zero.';return;}products.unshift({id:Date.now(),name,price,emoji,cat,sub:'Everyday essential'});save();renderProducts();document.getElementById('adminMsg').textContent='Added to this device’s demo catalogue.';document.getElementById('newName').value='';document.getElementById('newPrice').value='';document.getElementById('newEmoji').value='';}
 // Blinkit-style area label: show city/area only; keep full address and GPS privately saved for checkout.
-function openLocationCheckout(){if(typeof checkout==='function'){checkout();}else{const el=document.getElementById('topDeliveryLocation');if(el)el.title='Add your delivery address at checkout';}}
+function openLocationCheckout(){if(typeof checkout==='function'){checkout(true);}else{const el=document.getElementById('topDeliveryLocation');if(el)el.title='Add your delivery address at checkout';}}
 function dailzoAreaFallback(saved){
  const raw=String(saved?.address||'').split(',').map(x=>x.trim()).filter(Boolean);
  if(raw.length>=2)return raw.slice(-2).join(', ');
