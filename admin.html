@@ -54,13 +54,13 @@ body{background:#f4f7fb;color:#152238;letter-spacing:-.08px}
 .note{background:#f0f5fc;border-color:#d7e3f4;color:#304d73;border-radius:14px}.statusmsg{background:#edf4fc;color:#284a73}.statusmsg.error{background:#fff0f0;color:#9d252b}
 a{color:#24558c!important}
 @media(hover:hover){.stat:hover,.panel:hover{box-shadow:0 13px 30px rgba(20,42,74,.08)}.stat:hover{transform:translateY(-2px)}}
-@media(max-width:700px){.topbar{background:rgba(255,255,255,.96);backdrop-filter:blur(16px)}.stat,.panel{border-radius:15px}.btn{min-height:41px}}
+@media(max-width:700px){.topbar{background:rgba(255,255,255,.96);backdrop-filter:blur(16px)}.stat,.panel{border-radius:15px}.btn{min-height:41px}.beta-version{display:block;width:max-content;margin-top:3px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important}}
 
 
 .neworder-alert{display:flex;align-items:center;gap:10px;background:#fff8e8;border:1px solid #f3d79b;color:#654b15;border-radius:14px;padding:13px 15px;margin:0 0 16px;box-shadow:0 6px 18px rgba(145,99,13,.07)}.neworder-alert>div{display:grid;gap:3px;flex:1}.neworder-alert small{font-size:12px;color:#816b3c}.order-filter{min-width:170px}.order-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.order-actions .btn{white-space:nowrap}.order-new-row td{background:#fffdf7}.order-new-row td:first-child{box-shadow:inset 3px 0 #e8a72b}.orderstats .stat strong{font-size:28px}@media(max-width:700px){.neworder-alert{align-items:flex-start;flex-wrap:wrap}.neworder-alert>div{flex-basis:100%}.order-filter{min-width:100%;flex:1}.order-actions{min-width:150px}}
 
-</style>
+.beta-version{display:inline-flex;vertical-align:middle;align-items:center;border:1px solid #bfd4f2;background:#edf4ff;color:#24558c;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:900;letter-spacing:.5px;white-space:nowrap}\n</style>
 </head>
 <body>
 <div class="app">
@@ -84,7 +84,7 @@ a{color:#24558c!important}
 </aside>
 <div class="main">
 <header class="topbar">
-  <div style="display:flex;align-items:center;gap:12px"><button class="btn soft mobilemenu" id="mobileMenu" aria-label="Menu">☰</button><div><div class="crumb">DAILZO / <span id="crumb">OVERVIEW</span></div><h1 id="pageTitle">Store overview</h1></div></div>
+  <div style="display:flex;align-items:center;gap:12px"><button class="btn soft mobilemenu" id="mobileMenu" aria-label="Menu">☰</button><div><div class="crumb">DAILZO / <span id="crumb">OVERVIEW</span></div><h1 id="pageTitle">Store overview <span class="beta-version">BETA · VERSION 8</span></h1></div></div>
   <div class="topright"><button class="btn soft" id="refreshBtn">↻ Refresh</button><div class="avatar">D</div></div>
 </header>
 <main class="content">
@@ -254,7 +254,7 @@ const firebaseConfig={apiKey:"AIzaSyAADmKgQFARoB1Ew6H_5_tQ_4B7iaN5q64",authDomai
 const app=initializeApp(firebaseConfig,"dailzo-admin-panel"), db=getFirestore(app), auth=getAuth(app);
 const $=id=>document.getElementById(id);let products=[],currentUser=null,orders=[],ordersUnsubscribe=null,seenOrderIds=new Set(),ordersFirstSnapshot=true;const ADMIN_UID="3FgPfykZfsf711cnlYQaBARmir22";const ORDER_STATUSES=["Pending","Accepted","Preparing","Out for delivery","Delivered","Cancelled"];
 const names={dashboard:["OVERVIEW","Store overview"],products:["CATALOGUE","Product listing"],editor:["CATALOGUE","Product editor"],orders:["OPERATIONS","Orders"],inventory:["INVENTORY","Inventory"],customers:["CUSTOMERS","Customer management"],analytics:["REPORTS","Sales & analytics"],store:["STORE","Store registration"],adminaccount:["SYSTEM","Admin Account"]};
-window.showView=function(name){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));document.querySelectorAll(".nav button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===name));$("crumb").textContent=(names[name]||[])[0]||"OVERVIEW";$("pageTitle").textContent=(names[name]||[])[1]||"Dashboard";if(name==="editor")$("crumb").textContent="PRODUCT EDITOR";window.scrollTo({top:0,behavior:"auto"});};
+window.showView=function(name){document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="view-"+name));document.querySelectorAll(".nav button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===name));$("crumb").textContent=(names[name]||[])[0]||"OVERVIEW";const title=(names[name]||[])[1]||"Dashboard";$("pageTitle").innerHTML=safe(title)+' <span class="beta-version">BETA · VERSION 8</span>';if(name==="editor")$("crumb").textContent="PRODUCT EDITOR";closeMobileMenu();if(name==="orders")renderOrders();window.scrollTo({top:0,behavior:"auto"});};
 function safe(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function normalize(d){const x=d.data();return {id:d.id,name:x.Name??x.name??x.Product_name??x.product_name??x.title??"Unnamed product",price:Number(x.Price??x.price??x.sale_price??x.selling_price??0),mrp:Number(x.MRP??x.mrp??0),stock:Number(x.Stock??x.stock??0),category:x.Category??x.category??x.cat??"Other",image:x.Image??x.image??x.Image_URL??x.image_url??"",description:x.Description??x.description??"",unit:x.Unit??x.unit??x.Sub??x.sub??"",featured:Boolean(x.Featured??x.featured??false)};}
 function setStatus(id,msg,error=false){const el=$(id);if(!el)return;el.textContent=msg;el.classList.toggle("error",error);}
@@ -300,7 +300,7 @@ async function saveStock(id,value){
 async function adjustStock(id,delta){const p=products.find(x=>x.id===id);if(!p)return;await saveStock(id,Math.max(0,p.stock+delta));}
 function formatOrderDate(o){try{if(o.createdAt?.toDate)return o.createdAt.toDate().toLocaleString("en-IN");}catch{}return o.date||"—";}
 function updateOrderMetrics(){
- const status=o=>String(o.status||"Pending").toLowerCase();
+ const status=o=>String(o.status??o.orderStatus??"Pending").toLowerCase();
  const pending=orders.filter(o=>["pending","new","placed"].includes(status(o))).length;
  const accepted=orders.filter(o=>status(o)==="accepted").length;
  const active=orders.filter(o=>["preparing","packed","out for delivery","out_for_delivery"].includes(status(o))).length;
@@ -318,10 +318,10 @@ function showNewOrderAlert(order){
 function renderOrders(){
  const q=($("orderSearch")?.value||"").trim().toLowerCase();
  const filter=$("orderFilter")?.value||"all";
- const list=orders.filter(o=>[o.id,o.name,o.phone,o.address,o.status].join(" ").toLowerCase().includes(q)&& (filter==="all"||String(o.status||"Pending")===filter));
+ const list=orders.filter(o=>[o.id,o.name,o.customerName,o.fullName,o.phone,o.customerPhone,o.mobile,o.address,o.deliveryAddress,o.shippingAddress,o.status,o.orderStatus].join(" ").toLowerCase().includes(q)&& (filter==="all"||String(o.status??o.orderStatus??"Pending").toLowerCase()===filter.toLowerCase()));
  $("totalOrders").textContent=orders.length;
- $("pendingOrders").textContent=orders.filter(o=>["pending","new","placed"].includes(String(o.status||"Pending").toLowerCase())).length;
- $("outOrders").textContent=orders.filter(o=>String(o.status||"").toLowerCase()==="out for delivery").length;
+ $("pendingOrders").textContent=orders.filter(o=>["pending","new","placed"].includes(String(o.status??o.orderStatus??"Pending").toLowerCase())).length;
+ const outOrdersEl=$("outOrders");if(outOrdersEl)outOrdersEl.textContent=orders.filter(o=>String(o.status??o.orderStatus??"").toLowerCase()==="out for delivery").length;
  $("orderCount").textContent="("+list.length+" shown / "+orders.length+")";
  updateOrderMetrics();renderCustomers();renderAnalytics();
  $("ordersEmpty").style.display=list.length?"none":"block";
@@ -347,7 +347,7 @@ function loadOrders(){
  setStatus("ordersStatus","Firebase Orders collection se connection ki koshish ho rahi hai…");$("ordersUpdated").textContent="Connecting live feed…";
  let firstResponse=false, fallbackStarted=false;
  const applyOrdersSnapshot=(snap)=>{
-  const next=snap.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(orderDateValue(y)?.getTime?.()||0)-(orderDateValue(x)?.getTime?.()||0));
+  const next=snap.docs.map(d=>({...d.data(),id:d.id})).sort((x,y)=>(orderDateValue(y)?.getTime?.()||0)-(orderDateValue(x)?.getTime?.()||0));
   if(!ordersFirstSnapshot){const newPending=next.find(o=>!seenOrderIds.has(o.id)&&["pending","new","placed"].includes(String(o.status||o.orderStatus||"Pending").toLowerCase()));if(newPending){showNewOrderAlert(newPending);if("Notification" in window&&Notification.permission==="granted"){try{new Notification("Dailzo: New order",{body:`Order #${newPending.id} · ₹${orderTotalValue(newPending)}`});}catch{}}}}
   orders=next;seenOrderIds=new Set(orders.map(o=>o.id));ordersFirstSnapshot=false;renderOrders();
  };
