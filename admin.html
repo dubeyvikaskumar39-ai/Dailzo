@@ -218,7 +218,7 @@ a{color:#24558c!important}
 
 
 <section class="view" id="view-store">
-  <div class="welcome"><div><h2>Store Registration</h2><p>Registered stores ki detailed information dekho, ya alag option se naya store add karo.</p></div><button class="btn primary" id="openNewStoreBtn">＋ Naya Store Jodein</button></div>
+  <div class="welcome"><div><h2>Store Registration</h2><p>Store details aur GPS delivery radius register ya update karo.</p></div><button class="btn primary" id="openNewStoreBtn">＋ Store Register Karein</button></div>
   <section class="panel" id="registeredStoresPanel">
     <div class="panelhead"><h3>📍 Registered Stores</h3><span class="tag green" id="storeCountTag">0 STORES</span></div>
     <p class="muted">Har registered store ka address, GPS coordinates, delivery radius aur registration status yahan dikhega.</p>
@@ -424,15 +424,66 @@ let storeRecords=[],editingStoreId=null,editingLegacyStore=false;
 function renderStoreMap(){const lat=Number($("storeLatitude").value),lng=Number($("storeLongitude").value);if($("storeLatitude").value===""||$("storeLongitude").value===""||!Number.isFinite(lat)||!Number.isFinite(lng)||lat < -90||lat > 90||lng < -180||lng > 180){$("storeMapPreview").style.display="none";return;}const url=`https://www.google.com/maps?q=${lat},${lng}`;$("storeMapLink").href=url;$("storeMapFrame").src=`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;$("storeMapPreview").style.display="block";}
 function storeDetailsCard(store){const id=String(store.id||'legacy');const lat=Number(store.latitude),lng=Number(store.longitude);const map=Number.isFinite(lat)&&Number.isFinite(lng)?`https://maps.google.com/?q=${lat},${lng}`:'';return `<article class="panel" style="padding:17px"><div class="panelhead"><h3>${safe(store.storeName||'Unnamed Store')}</h3><span class="tag ${store.registered===false?'warn':'green'}">${store.registered===false?'INACTIVE':'REGISTERED'}</span></div><p><b>Address</b><br>${safe(store.storeAddress||'Address not provided')}</p><div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><small class="muted">Latitude</small><br><b>${Number.isFinite(lat)?lat.toFixed(6):'—'}</b></div><div><small class="muted">Longitude</small><br><b>${Number.isFinite(lng)?lng.toFixed(6):'—'}</b></div><div><small class="muted">Delivery radius</small><br><b>${Number(store.radiusKm)||3} km</b></div><div><small class="muted">Store ID</small><br><b style="overflow-wrap:anywhere">${safe(id)}</b></div></div><div class="toolbar" style="margin-bottom:0"><button class="btn soft smallbtn" data-edit-store="${safe(id)}">Edit Details</button>${map?`<a class="btn soft smallbtn" href="${map}" target="_blank" rel="noopener">View Map ↗</a>`:''}</div></article>`;}
 function renderRegisteredStores(){const list=$("registeredStoresList"),empty=$("registeredStoresEmpty");$("storeCountTag").textContent=`${storeRecords.length} STORE${storeRecords.length===1?'':'S'}`;list.innerHTML=storeRecords.map(storeDetailsCard).join('');list.style.display=storeRecords.length?'grid':'none';empty.style.display=storeRecords.length?'none':'block';list.querySelectorAll('[data-edit-store]').forEach(btn=>btn.onclick=()=>editStore(btn.dataset.editStore));}
-async function loadDeliverySettings(){try{const [storesSnap,legacySnap]=await Promise.all([getDocs(collection(db,"Stores")),getDoc(doc(db,"StoreSettings","delivery"))]);storeRecords=storesSnap.docs.map(d=>({id:d.id,...d.data(),_legacy:false}));if(legacySnap.exists()){const legacy=legacySnap.data();if(!legacy.storeRecordId||!storeRecords.some(s=>s.id===legacy.storeRecordId)){storeRecords.unshift({id:'legacy',...legacy,_legacy:true});}}
-renderRegisteredStores();if(storeRecords.length){const primary=storeRecords[0];if($("dashboardStoreRadius"))$("dashboardStoreRadius").textContent=(Number(primary.radiusKm)||3)+" km";if($("dashboardStoreStatus"))$("dashboardStoreStatus").textContent="Registered · "+(primary.storeName||"Dailzo Store");setStatus("registeredStoresStatus",`${storeRecords.length} registered store(s) loaded.`);}else{if($("dashboardStoreRadius"))$("dashboardStoreRadius").textContent="3 km";if($("dashboardStoreStatus"))$("dashboardStoreStatus").textContent="Not registered yet";setStatus("registeredStoresStatus","Abhi koi store register nahi hai. Naya Store Jodein button se shuru karein.");}}catch(e){setStatus("registeredStoresStatus","Store details load nahi hui: "+e.message,true);}}
-function openNewStoreForm(){editingStoreId=null;editingLegacyStore=false;$("storeEditorTitle").textContent="＋ Naya Store Register Karein";$("saveDeliverySettings").textContent="Register New Store";$("storeName").value="";$("storeAddress").value="";$("storeLatitude").value="";$("storeLongitude").value="";$("deliveryRadius").value="3";$("storeMapPreview").style.display="none";setStatus("deliverySettingsStatus","Naye store ki details bharein aur save karein.");$("storeEditorPanel").style.display="block";$("storeEditorPanel").scrollIntoView({behavior:"smooth",block:"start"});}
+async function loadDeliverySettings(){
+ try{
+  // Preserve the original working schema: the customer website reads StoreSettings/delivery.
+  // Do not query the new Stores collection; existing Firestore rules may not grant access to it.
+  const snap=await getDoc(doc(db,"StoreSettings","delivery"));
+  storeRecords=[];
+  if(snap.exists()){
+   const data=snap.data();
+   storeRecords.push({id:"legacy",...data,_legacy:true});
+   if($("storeName"))$("storeName").value=data.storeName||"Dailzo Store";
+   if($("storeAddress"))$("storeAddress").value=data.storeAddress||"";
+   if($("storeLatitude"))$("storeLatitude").value=data.latitude??"";
+   if($("storeLongitude"))$("storeLongitude").value=data.longitude??"";
+   if($("deliveryRadius"))$("deliveryRadius").value=Number(data.radiusKm)||3;
+   if($("dashboardStoreRadius"))$("dashboardStoreRadius").textContent=(Number(data.radiusKm)||3)+" km";
+   if($("dashboardStoreStatus"))$("dashboardStoreStatus").textContent="Registered · "+(data.storeName||"Dailzo Store");
+   setStatus("registeredStoresStatus",`Store registered: ${data.storeName||"Dailzo Store"}. GPS pin saved; ${Number(data.radiusKm)||3} km delivery radius is configured.`);
+   setStatus("deliverySettingsStatus",`Store registered: ${data.storeName||"Dailzo Store"}. ${Number(data.radiusKm)||3} km delivery radius.`);
+   renderStoreMap();
+  }else{
+   if($("dashboardStoreRadius"))$("dashboardStoreRadius").textContent="3 km";
+   if($("dashboardStoreStatus"))$("dashboardStoreStatus").textContent="Not registered yet";
+   setStatus("registeredStoresStatus","Abhi koi store register nahi hai. Store Register Karein button se shuru karein.");
+   setStatus("deliverySettingsStatus","Store location abhi set nahi hai. GPS use karo ya Maps se coordinates daal kar save karo.");
+  }
+  renderRegisteredStores();
+ }catch(e){
+  setStatus("registeredStoresStatus","Store details load nahi hui: "+e.message,true);
+  setStatus("deliverySettingsStatus","Settings load nahi hui: "+e.message,true);
+ }
+}
+function openNewStoreForm(){editingStoreId=null;editingLegacyStore=true;$("storeEditorTitle").textContent="＋ Naya Store Register Karein";$("saveDeliverySettings").textContent="Register New Store";$("storeName").value="";$("storeAddress").value="";$("storeLatitude").value="";$("storeLongitude").value="";$("deliveryRadius").value="3";$("storeMapPreview").style.display="none";setStatus("deliverySettingsStatus","Store details bharein aur register karein. New registration purane store configuration ko update karega.");$("storeEditorPanel").style.display="block";$("storeEditorPanel").scrollIntoView({behavior:"smooth",block:"start"});}
 function editStore(id){const store=storeRecords.find(s=>String(s.id)===String(id));if(!store)return;editingStoreId=store.id;editingLegacyStore=!!store._legacy;$("storeEditorTitle").textContent="✎ Store Details Update Karein";$("saveDeliverySettings").textContent="Update Store Details";$("storeName").value=store.storeName||"";$("storeAddress").value=store.storeAddress||"";$("storeLatitude").value=store.latitude??"";$("storeLongitude").value=store.longitude??"";$("deliveryRadius").value=Number(store.radiusKm)||3;$("storeEditorPanel").style.display="block";setStatus("deliverySettingsStatus","Store details edit mode mein hain.");renderStoreMap();$("storeEditorPanel").scrollIntoView({behavior:"smooth",block:"start"});}
 $("openNewStoreBtn").onclick=openNewStoreForm;$("cancelStoreEditBtn").onclick=()=>{$("storeEditorPanel").style.display="none";editingStoreId=null;editingLegacyStore=false;};
 $("storeLatitude").addEventListener("input",renderStoreMap);$("storeLongitude").addEventListener("input",renderStoreMap);
 $("useStoreGps").onclick=()=>{if(!navigator.geolocation){setStatus("deliverySettingsStatus","Is browser mein GPS supported nahi hai.",true);return;}if(!window.isSecureContext){setStatus("deliverySettingsStatus","GPS ke liye HTTPS website zaroori hai.",true);return;}setStatus("deliverySettingsStatus","Store GPS location mil rahi hai…");navigator.geolocation.getCurrentPosition(pos=>{$("storeLatitude").value=pos.coords.latitude.toFixed(6);$("storeLongitude").value=pos.coords.longitude.toFixed(6);renderStoreMap();setStatus("deliverySettingsStatus","GPS location mil gayi. Confirm karo ki ye store ka exact location hai.");},err=>setStatus("deliverySettingsStatus","GPS nahi mili: "+err.message,true),{enableHighAccuracy:true,timeout:15000,maximumAge:0});};
-$("saveDeliverySettings").onclick=async()=>{if(!currentUser){setStatus("deliverySettingsStatus","Pehle Firebase admin account se sign in karo.",true);return;}if(currentUser.uid!==ADMIN_UID){setStatus("deliverySettingsStatus","Admin UID match nahi hua. Current UID: "+currentUser.uid+" | Expected UID: "+ADMIN_UID,true);return;}const storeName=$("storeName").value.trim(),storeAddress=$("storeAddress").value.trim(),latitude=Number($("storeLatitude").value),longitude=Number($("storeLongitude").value),radiusKm=Number($("deliveryRadius").value);if(!storeName||!storeAddress||$("storeLatitude").value===""||$("storeLongitude").value===""||!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180||!Number.isFinite(radiusKm)||radiusKm<0.5||radiusKm>25){setStatus("deliverySettingsStatus","Store name, full address, valid GPS coordinates aur 0.5–25 km radius bharo.",true);return;}const btn=$("saveDeliverySettings");btn.disabled=true;try{const payload={storeName,storeAddress,latitude,longitude,radiusKm,registered:true,updatedAt:serverTimestamp(),updatedBy:currentUser.uid};if(editingLegacyStore){await setDoc(doc(db,"StoreSettings","delivery"),{...payload,registeredAt:serverTimestamp()},{merge:true});const ref=await addDoc(collection(db,"Stores"),{...payload,registeredAt:serverTimestamp(),migratedFromLegacy:true});await setDoc(doc(db,"StoreSettings","delivery"),{storeRecordId:ref.id},{merge:true});}else if(editingStoreId){await updateDoc(doc(db,"Stores",editingStoreId),payload);const legacy=await getDoc(doc(db,"StoreSettings","delivery"));if(legacy.exists()&&legacy.data().storeRecordId===editingStoreId){await setDoc(doc(db,"StoreSettings","delivery"),payload,{merge:true});}}else{const ref=await addDoc(collection(db,"Stores"),{...payload,registeredAt:serverTimestamp()});const legacy=await getDoc(doc(db,"StoreSettings","delivery"));if(!legacy.exists()){await setDoc(doc(db,"StoreSettings","delivery"),{...payload,storeRecordId:ref.id,registeredAt:serverTimestamp()});}}
-setStatus("deliverySettingsStatus",editingStoreId||editingLegacyStore?"Store details update ho gayi.":"Naya store successfully register ho gaya.");$("storeEditorPanel").style.display="none";editingStoreId=null;editingLegacyStore=false;await loadDeliverySettings();}catch(e){setStatus("deliverySettingsStatus","Save nahi hua: "+e.message+" Firestore rules mein Stores aur StoreSettings write permission check karo.",true);}finally{btn.disabled=false;}};
+$("saveDeliverySettings").onclick=async()=>{
+ if(!currentUser){setStatus("deliverySettingsStatus","Pehle Firebase admin account se sign in karo.",true);return;}
+ if(currentUser.uid!==ADMIN_UID){setStatus("deliverySettingsStatus","Admin UID match nahi hua. Current UID: "+currentUser.uid+" | Expected UID: "+ADMIN_UID,true);return;}
+ const storeName=$("storeName").value.trim(),storeAddress=$("storeAddress").value.trim(),latitude=Number($("storeLatitude").value),longitude=Number($("storeLongitude").value),radiusKm=Number($("deliveryRadius").value);
+ if(!storeName||!storeAddress||$("storeLatitude").value===""||$("storeLongitude").value===""||!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180||!Number.isFinite(radiusKm)||radiusKm<0.5||radiusKm>25){setStatus("deliverySettingsStatus","Store name, full address, valid GPS coordinates aur 0.5–25 km radius bharo.",true);return;}
+ const btn=$("saveDeliverySettings");btn.disabled=true;
+ try{
+  // Same write path and field names as the previously working Settings/Help form.
+  // This collection/document is already used by the customer website.
+  const payload={storeName,storeAddress,latitude,longitude,radiusKm,registered:true,registeredAt:serverTimestamp(),updatedAt:serverTimestamp(),updatedBy:currentUser.uid};
+  await setDoc(doc(db,"StoreSettings","delivery"),payload);
+  editingStoreId=null;editingLegacyStore=true;
+  storeRecords=[{id:"legacy",...payload,_legacy:true}];
+  if($("dashboardStoreRadius"))$("dashboardStoreRadius").textContent=radiusKm+" km";
+  if($("dashboardStoreStatus"))$("dashboardStoreStatus").textContent="Registered · "+storeName;
+  renderRegisteredStores();
+  setStatus("deliverySettingsStatus",`Saved! ${storeName} se ${radiusKm} km radius mein delivery check hogi.`);
+  setStatus("registeredStoresStatus",`Store registered: ${storeName}. Customer website compatibility ke liye StoreSettings/delivery par save hua.`);
+  $("storeEditorPanel").style.display="none";
+  renderStoreMap();
+ }catch(e){
+  setStatus("deliverySettingsStatus","Save nahi hua: "+e.message+" Original StoreSettings/delivery write permission check karein.",true);
+ }finally{btn.disabled=false;}
+};
 async function adminSignIn(){const email=$("settingsAdminEmail").value.trim(),password=$("settingsAdminPassword").value;if(!email||!password){setStatus("settingsAuthStatus","Email aur password bharo.",true);return;}try{await signInWithEmailAndPassword(auth,email,password);$("settingsAdminPassword").value="";}catch(e){setStatus("settingsAuthStatus","Sign in nahi hua: "+e.message,true);}}
 $("settingsSignInBtn").onclick=adminSignIn;
 $("settingsSignOutBtn").onclick=async()=>{try{await signOut(auth);}catch(e){setStatus("settingsAuthStatus","Sign out nahi hua: "+e.message,true);}};
