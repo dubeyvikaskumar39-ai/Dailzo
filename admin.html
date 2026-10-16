@@ -345,13 +345,16 @@ function loadOrders(){
  if(!currentUser){orders=[];renderOrders();setStatus("ordersStatus","Orders dekhne ke liye admin sign-in karo.",true);$("ordersUpdated").textContent="Signed out";return;}
  if(currentUser.uid!==ADMIN_UID){orders=[];renderOrders();setStatus("ordersStatus","Is Firebase account ko admin permission nahi hai. Sahi admin account se sign in karo.",true);$("ordersUpdated").textContent="Access denied";return;}
  setStatus("ordersStatus","Firebase Orders collection se connection ki koshish ho rahi hai…");$("ordersUpdated").textContent="Connecting live feed…";
- let firstResponse=false;
- const feedTimeout=setTimeout(()=>{if(!firstResponse){setStatus("ordersStatus","Orders feed abhi tak Firebase se response nahi mila. Network, Firebase project aur Orders collection ki read permission check ho rahi hai; Reconnect / refresh dabakar dobara try karein.",true);$("ordersUpdated").textContent="No feed response";}},9000);
- ordersUnsubscribe=onSnapshot(collection(db,"Orders"),snap=>{
-  firstResponse=true;clearTimeout(feedTimeout);
+ let firstResponse=false, fallbackStarted=false;
+ const applyOrdersSnapshot=(snap)=>{
   const next=snap.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(orderDateValue(y)?.getTime?.()||0)-(orderDateValue(x)?.getTime?.()||0));
   if(!ordersFirstSnapshot){const newPending=next.find(o=>!seenOrderIds.has(o.id)&&["pending","new","placed"].includes(String(o.status||o.orderStatus||"Pending").toLowerCase()));if(newPending){showNewOrderAlert(newPending);if("Notification" in window&&Notification.permission==="granted"){try{new Notification("Dailzo: New order",{body:`Order #${newPending.id} · ₹${orderTotalValue(newPending)}`});}catch{}}}}
-  orders=next;seenOrderIds=new Set(orders.map(o=>o.id));ordersFirstSnapshot=false;renderOrders();setStatus("ordersStatus",`${orders.length} order(s) found in Firebase Orders · Live updates connected.`);$("ordersUpdated").textContent="Live · Updated "+new Date().toLocaleTimeString("en-IN");
+  orders=next;seenOrderIds=new Set(orders.map(o=>o.id));ordersFirstSnapshot=false;renderOrders();
+ };
+ const feedTimeout=setTimeout(async()=>{if(!firstResponse&&!fallbackStarted){fallbackStarted=true;setStatus("ordersStatus","Live feed slow hai; direct Orders read try kar rahe hain…");$("ordersUpdated").textContent="Trying direct read…";try{const snap=await getDocs(collection(db,"Orders"));if(!firstResponse){firstResponse=true;applyOrdersSnapshot(snap);setStatus("ordersStatus",`${orders.length} order(s) loaded by direct read. Live listener abhi response nahi de raha; reconnect karke try karein.`);$("ordersUpdated").textContent="Direct read · "+new Date().toLocaleTimeString("en-IN");}}catch(e){if(!firstResponse){firstResponse=true;setStatus("ordersStatus",`Orders read fail hua: ${e.code||"unknown"} — ${e.message||"No details"}. Dashboard ka count purana/cached ho sakta hai; Orders collection read permission aur signed-in admin verify karein.`,true);$("ordersUpdated").textContent="Read error";}}}},9000);
+ ordersUnsubscribe=onSnapshot(collection(db,"Orders"),snap=>{
+  firstResponse=true;clearTimeout(feedTimeout);
+  applyOrdersSnapshot(snap);setStatus("ordersStatus",`${orders.length} order(s) found in Firebase Orders · Live updates connected.`);$("ordersUpdated").textContent="Live · Updated "+new Date().toLocaleTimeString("en-IN");
  },e=>{firstResponse=true;clearTimeout(feedTimeout);setStatus("ordersStatus",`Orders load nahi hue. Firebase error: ${e.code||"unknown"} — ${e.message||"No details"}. Iska matlab read permission, login, network ya Firebase project mismatch ho sakta hai.`,true);$("ordersUpdated").textContent="Feed error";});
 }
 async function updateOrderStatus(id,status,rejected=false){
